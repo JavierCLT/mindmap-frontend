@@ -1,0 +1,564 @@
+import * as d3 from "d3"
+
+interface MindmapNode {
+  id: string
+  name: string
+  children?: MindmapNode[]
+  depth: number
+  x?: number
+  y?: number
+  parent?: MindmapNode
+  _children?: MindmapNode[] // Collapsed children (no longer used but kept for compatibility)
+  lineIndex?: number // Line index in the markdown
+}
+
+interface RenderOptions {
+  layout: "right" | "bi" // Only right and bidirectional layouts
+  colorScheme: "default" | "vibrant" | "summer" | "monochrome"
+  preserveTransform?: d3.ZoomTransform // To preserve zoom/pan state
+  theme?: "dark" | "light" // Current theme
+  forExport?: boolean // Special flag for export mode
+}
+
+// Update the COLOR_SCHEMES object with the new color palettes
+const COLOR_SCHEMES = {
+  default: [
+    "#2A9D8F", // Teal
+    "#E9C46A", // Yellow
+    "#F4A261", // Orange
+    "#E76F51", // Coral
+    "#2A9D8F", // Repeat the sequence
+    "#E9C46A",
+    "#F4A261",
+    "#E76F51",
+    "#2A9D8F",
+    "#E9C46A",
+    "#F4A261",
+    "#E76F51",
+  ],
+  vibrant: [
+    "#EF476F", // Pink
+    "#FFD166", // Yellow
+    "#118AB2", // Blue
+    "#06D6A0", // Green
+    "#EF476F", // Repeat the sequence
+    "#FFD166",
+    "#118AB2",
+    "#06D6A0",
+    "#EF476F",
+    "#FFD166",
+    "#118AB2",
+    "#06D6A0",
+  ],
+  summer: [
+    "#70D6FF", // Light Blue
+    "#FF70A6", // Pink
+    "#FFD670", // Yellow
+    "#E9FF70", // Light Green
+    "#70D6FF", // Repeat the sequence
+    "#FF70A6",
+    "#FFD670",
+    "#E9FF70",
+    "#70D6FF",
+    "#FF70A6",
+    "#FFD670",
+    "#E9FF70",
+  ],
+  monochrome: [
+    "#00A6FB", // Light Blue
+    "#0582CA", // Medium Blue
+    "#006494", // Blue
+    "#003554", // Dark Blue
+    "#051923", // Very Dark Blue
+    "#00A6FB", // Repeat the sequence
+    "#0582CA",
+    "#006494",
+    "#003554",
+    "#051923",
+    "#00A6FB",
+    "#0582CA",
+  ],
+}
+
+export function renderMindmap(container: HTMLElement, data: MindmapNode, options: RenderOptions) {
+  // Clear container
+  container.innerHTML = ""
+
+  // Set dimensions
+  const width = container.clientWidth
+  const height = container.clientHeight
+
+  // Create SVG
+  const svg = d3
+    .select(container)
+    .append("svg")
+    .attr("width", "100%")
+    .attr("height", "100%")
+    .attr("viewBox", [0, 0, width, height])
+    .attr("class", "mindmap-svg")
+
+  // Create a zoom behavior
+  const zoom = d3.zoom<SVGSVGElement, unknown>().on("zoom", (event) => {
+    g.attr("transform", event.transform)
+  })
+
+  // Only add zoom behavior if not in export mode
+  if (!options.forExport) {
+    svg.call(zoom as any)
+  }
+
+  // Set background color based on theme
+  const bgColor = options.theme === "dark" ? "#1a1a1a" : "#ffffff"
+  svg.style("background-color", bgColor)
+
+  // Determine text color based on theme
+  const textColor = options.theme === "dark" ? "#ffffff" : "#000000"
+
+  // Create a group for the entire mindmap
+  const g = svg.append("g")
+
+  // Create hierarchical layout
+  const rootNode = d3.hierarchy(data)
+
+  // Split data for bidirectional layout
+  let leftNodes: d3.HierarchyPointNode<MindmapNode>[] = []
+  let rightNodes: d3.HierarchyPointNode<MindmapNode>[] = []
+  let rootNodeProcessed: d3.HierarchyPointNode<MindmapNode> | null = null
+
+  // Increase horizontal spacing between levels
+  const horizontalSpacing = 220 // Increased from 180 to provide more space for text
+
+  if (options.layout === "bi" && rootNode.children && rootNode.children.length > 0) {
+    // Create a copy of the root node for processing
+    const rootCopy = { ...rootNode }
+
+    // Split children into left and right groups
+    const midPoint = Math.ceil(rootNode.children.length / 2)
+
+    // Create left side hierarchy
+    const leftRoot = d3.hierarchy({ ...data, children: data.children?.slice(0, midPoint) })
+
+    // Create right side hierarchy
+    const rightRoot = d3.hierarchy({ ...data, children: data.children?.slice(midPoint) })
+
+    // Configure tree layouts with increased horizontal spacing
+    const treeLayout = d3
+      .tree<MindmapNode>()
+      .nodeSize([30, horizontalSpacing]) // Increased horizontal spacing
+      .separation((a, b) => (a.parent === b.parent ? 1.0 : 1.3))
+
+    // Apply layouts
+    if (leftRoot.children && leftRoot.children.length > 0) {
+      const leftTree = treeLayout(leftRoot)
+      // Flip coordinates for left side
+      leftTree.each((node) => {
+        if (node.depth > 0) {
+          node.y = -node.y
+        }
+      })
+      leftNodes = leftTree.descendants()
+    }
+
+    if (rightRoot.children && rightRoot.children.length > 0) {
+      const rightTree = treeLayout(rightRoot)
+      rightNodes = rightTree.descendants()
+    }
+
+    // Process the root node separately
+    rootNodeProcessed = {
+      ...rootNode,
+      x: 0,
+      y: 0,
+      depth: 0,
+      height: rootNode.height,
+      data: rootNode.data,
+      parent: null,
+      children: [...(leftRoot.children || []), ...(rightRoot.children || [])],
+    }
+
+    // Filter out duplicate root nodes from left and right trees
+    leftNodes = leftNodes.filter((node) => node.depth > 0)
+    rightNodes = rightNodes.filter((node) => node.depth > 0)
+  } else {
+    // For right layout, use standard tree with increased horizontal spacing
+    const treeLayout = d3
+      .tree<MindmapNode>()
+      .nodeSize([30, horizontalSpacing]) // Increased horizontal spacing
+      .separation((a, b) => (a.parent === b.parent ? 1.0 : 1.3))
+
+    rootNodeProcessed = treeLayout(rootNode)
+    rightNodes = rootNodeProcessed.descendants()
+  }
+
+  // Combine all nodes
+  const allNodes = [...(rootNodeProcessed ? [rootNodeProcessed] : []), ...leftNodes, ...rightNodes]
+
+  // Create links group - put it BEFORE nodes group for proper layering
+  const linksGroup = g.append("g").attr("class", "links-group")
+
+  // Create nodes group - this will be on top of links
+  const nodesGroup = g.append("g").attr("class", "nodes-group")
+
+  // Get color function based on color scheme
+  const getNodeColor = (d: d3.HierarchyPointNode<MindmapNode>) => {
+    // Get the color palette based on the selected scheme
+    const colorPalette = COLOR_SCHEMES[options.colorScheme] || COLOR_SCHEMES.default
+
+    // For monochrome, use the same blue shades in both light and dark mode
+    if (options.colorScheme === "monochrome") {
+      return colorPalette[d.depth % colorPalette.length]
+    }
+
+    return colorPalette[d.depth % colorPalette.length]
+  }
+
+  // Create links
+  const links: d3.HierarchyPointLink<MindmapNode>[] = []
+
+  // Process each node to create links
+  allNodes.forEach((node) => {
+    if (node.parent) {
+      links.push({
+        source: node.parent,
+        target: node,
+      } as d3.HierarchyPointLink<MindmapNode>)
+    }
+  })
+
+  // Add nodes
+  const nodes = nodesGroup
+    .selectAll(".node")
+    .data(allNodes)
+    .enter()
+    .append("g")
+    .attr("class", "mindmap-node")
+    .attr("data-depth", (d) => d.depth)
+    .attr("data-id", (d) => d.data.id)
+    .attr("transform", (d) => `translate(${d.y},${d.x})`)
+
+  // Helper function to get text width
+  function textWidth(text: string): number {
+    const tempText = svg.append("text").style("opacity", 0).text(text)
+    const width = (tempText.node() as SVGTextElement).getComputedTextLength()
+    tempText.remove()
+    return width
+  }
+
+  // Function to wrap text to multiple lines if it's too long
+  function wrapText(text: d3.Selection<SVGTextElement, any, any, any>, maxWidth: number) {
+    text.each(function () {
+      const text = d3.select(this)
+      const words = text.text().split(/\s+/).reverse()
+      const lineHeight = 1.2 // ems
+      const y = text.attr("y") || "0"
+      const dy = Number.parseFloat(text.attr("dy") || "0")
+
+      let line: string[] = []
+      let lineNumber = 0
+      let word: string | undefined
+      const lines: string[] = []
+
+      // First pass: determine how many lines we'll have
+      let tempLine: string[] = []
+      const tempWords = [...words] // Create a copy of words array
+
+      while ((word = tempWords.pop())) {
+        tempLine.push(word)
+        text.text(tempLine.join(" "))
+
+        if (text.node()!.getComputedTextLength() > maxWidth && tempLine.length > 1) {
+          tempLine.pop()
+          lines.push(tempLine.join(" "))
+          tempLine = [word]
+        }
+      }
+
+      // Add the last line
+      if (tempLine.length > 0) {
+        lines.push(tempLine.join(" "))
+      }
+
+      // Calculate vertical offset to center all lines
+      const totalLines = lines.length
+      const totalHeight = totalLines * lineHeight
+      const startDy = dy - totalHeight / 2 + lineHeight / 2
+
+      // Clear existing content
+      text.text(null)
+
+      // Reset for actual rendering
+      lineNumber = 0
+
+      // Create first tspan with adjusted vertical position
+      let tspan = text
+        .append("tspan")
+        .attr("x", text.attr("x"))
+        .attr("y", y)
+        .attr("dy", startDy + "em")
+        .attr("text-anchor", text.attr("text-anchor"))
+
+      // Second pass: actually create the tspans
+      line = []
+      while ((word = words.pop())) {
+        line.push(word)
+        tspan.text(line.join(" "))
+
+        if (tspan.node()!.getComputedTextLength() > maxWidth && line.length > 1) {
+          line.pop()
+          tspan.text(line.join(" "))
+          line = [word]
+
+          tspan = text
+            .append("tspan")
+            .attr("x", text.attr("x"))
+            .attr("y", y)
+            .attr("dy", lineHeight + "em")
+            .attr("text-anchor", text.attr("text-anchor"))
+            .text(word)
+        }
+      }
+    })
+  }
+
+  // Define max widths for different node types - REDUCED WIDTH FOR TITLE
+  const maxWidths = {
+    title: 180, // Root node (depth 0) - significantly reduced to force wrapping
+    mainBranch: 160, // First level (depth 1) - reduced
+    subBranch: 120, // Second level (depth 2) - significantly reduced to force 2 rows
+  }
+
+  // Add background rectangles for title, main branches, and second level branches (depth 0, 1, 2)
+  const nodeRects = nodes
+    .filter((d) => d.depth <= 2) // Include root, first level, and second level
+    .append("rect")
+    .attr("class", "mindmap-node-bg")
+    .attr("rx", 5) // Rounded corners
+    .attr("ry", 5)
+    .attr("fill", (d) => getNodeColor(d))
+    .attr("opacity", 1.0) // Solid color
+
+  // Add connection circles at node joints (like in the markmap UI)
+  // Only add for third level and beyond (depth > 2)
+  nodes
+    .filter((d) => d.depth > 2)
+    .append("circle")
+    .attr("class", "mindmap-node-circle")
+    .attr("r", 4) // Smaller circles like in markmap
+    .attr("cx", 0)
+    .attr("cy", 0)
+    .attr("fill", getNodeColor)
+    .attr("stroke", "none") // No stroke in markmap style
+
+  // Add text labels with level-specific positioning
+  const nodeTexts = nodes
+    .append("text")
+    .attr("class", (d) => `mindmap-node-text depth-${d.depth}`)
+    .attr("dy", "0.3em")
+    .attr("x", (d) => {
+      // Level-specific horizontal positioning
+      if (d.depth <= 2) return 0 // Center text for all boxed nodes (depth 0, 1, 2)
+      return d.y < 0 ? -10 : 10 // Third level and beyond to the right/left of the dot
+    })
+    .attr("text-anchor", (d) => {
+      // Level-specific text alignment
+      if (d.depth <= 2) return "middle" // Center text for all boxed nodes (depth 0, 1, 2)
+      return d.y < 0 ? "end" : "start" // Left side: right-aligned, Right side: left-aligned
+    })
+    .text((d) => d.data.name)
+    // Update the text color logic to ensure good contrast with the new color palettes
+    .attr("fill", (d) => {
+      // For boxed nodes, determine text color based on background color
+      if (d.depth <= 2) {
+        const nodeColor = getNodeColor(d)
+
+        // For summer colors, use dark grey text for yellow to improve contrast
+        if (options.colorScheme === "summer") {
+          if (nodeColor === "#FFD670" || nodeColor === "#E9FF70") {
+            return "#333333"
+          }
+          return "#000000"
+        }
+
+        // For monochrome dark blues, always use white text
+        if (options.colorScheme === "monochrome") {
+          return "#ffffff"
+        }
+
+        // For default scheme, use black text for yellow (#E9C46A) and white for others
+        if (options.colorScheme === "default") {
+          return nodeColor === "#E9C46A" ? "#000000" : "#ffffff"
+        }
+
+        // For vibrant scheme, use black text for yellow (#FFD166) and white for others
+        if (options.colorScheme === "vibrant") {
+          return nodeColor === "#FFD166" ? "#000000" : "#ffffff"
+        }
+
+        // Default to white text
+        return "#ffffff"
+      }
+
+      return textColor // Use theme text color for non-boxed nodes
+    })
+    .attr("font-size", (d) => (d.depth === 0 ? "18px" : "14px")) // Larger font for title
+    .attr("font-weight", (d) => (d.depth <= 1 ? "bold" : "normal")) // Bold text for root and first level
+
+  // Apply text wrapping based on depth
+  nodeTexts
+    .filter((d) => d.depth <= 2)
+    .each(function (d) {
+      const textElement = d3.select(this)
+      let maxWidth
+
+      // Adjust max width based on depth
+      if (d.depth === 0) maxWidth = maxWidths.title
+      else if (d.depth === 1) maxWidth = maxWidths.mainBranch
+      else maxWidth = maxWidths.subBranch
+
+      // Apply text wrapping
+      wrapText(textElement, maxWidth)
+
+      // After wrapping, ensure all tspans are properly centered
+      textElement.selectAll("tspan").attr("x", 0).attr("text-anchor", "middle")
+    })
+
+  // Store rectangle dimensions for link connections
+  const nodeDimensions = new Map<string, { width: number; height: number }>()
+
+  // Now adjust rectangle sizes based on wrapped text
+  nodeRects.each(function (d) {
+    const rect = d3.select(this)
+    const textNode = d3.select(this.parentNode).select("text").node()
+
+    if (!textNode) return
+
+    // Get bounding box of the text (which may now be multi-line)
+    const textBBox = (textNode as SVGTextElement).getBBox()
+
+    // Set padding based on depth
+    const padding = {
+      horizontal: d.depth === 0 ? 20 : d.depth === 1 ? 15 : 10, // Reduced padding for title
+      vertical: d.depth === 0 ? 10 : d.depth === 1 ? 8 : 6, // Reduced padding for title
+    }
+
+    // Set rectangle height based on text height
+    const rectHeight = textBBox.height + padding.vertical * 2
+    rect.attr("height", rectHeight)
+    rect.attr("y", -rectHeight / 2)
+
+    // Set rectangle width based on text width
+    const rectWidth = textBBox.width + padding.horizontal * 2
+    rect.attr("width", rectWidth)
+
+    // Position rectangle centered on the node for all boxed nodes
+    rect.attr("x", -rectWidth / 2)
+
+    // Store dimensions for link connections
+    nodeDimensions.set(d.data.id, { width: rectWidth, height: rectHeight })
+  })
+
+  // Create curved links with longer horizontal sections
+  // Updated to connect to the sides of rectangles for depth 1 and 2 nodes
+  const linkGenerator = (d: d3.HierarchyPointLink<any>) => {
+    const source = { x: d.source.x, y: d.source.y }
+    const target = { x: d.target.x, y: d.target.y }
+
+    // Adjust target coordinates for boxed nodes (depth 1 and 2)
+    if (d.target.depth <= 2) {
+      const dimensions = nodeDimensions.get(d.target.data.id)
+
+      if (dimensions) {
+        const halfWidth = dimensions.width / 2
+
+        // Determine which side of the rectangle to connect to
+        const isLeftSide = target.y < source.y
+
+        // Adjust target y-coordinate to connect to the side of the rectangle
+        target.y = isLeftSide ? target.y + halfWidth : target.y - halfWidth
+      }
+    }
+
+    // Calculate control points for a smooth curve with longer horizontal sections
+    // Move the curve bend point closer to the target to create a longer horizontal section
+    const bendPoint = 0.75 // Adjust this value between 0.5 and 0.9 to control the horizontal section length
+    const midY = source.y + (target.y - source.y) * bendPoint
+
+    return `M${source.y},${source.x}
+            C${midY},${source.x}
+             ${midY},${target.x}
+             ${target.y},${target.x}`
+  }
+
+  // Add links with curved paths
+  linksGroup
+    .selectAll(".link")
+    .data(links)
+    .enter()
+    .append("path")
+    .attr("class", "mindmap-link")
+    .attr("d", linkGenerator)
+    .attr("fill", "none")
+    .attr("stroke", (d) => getNodeColor(d.source)) // Color links based on source node depth
+    .attr("stroke-width", 2)
+    .attr("stroke-opacity", 0.8)
+
+  // Calculate the initial transform to center the mindmap
+  const initialTransform = getInitialTransform(allNodes, width, height)
+
+  // Apply transform based on options
+  if (options.preserveTransform && !options.forExport) {
+    // Use the zoom behavior to apply the preserved transform
+    svg.call((zoom as any).transform, options.preserveTransform)
+  } else if (!options.forExport) {
+    // Use the zoom behavior to apply the initial transform
+    svg.call((zoom as any).transform, initialTransform)
+  }
+
+  // Return the zoom behavior for external use
+  return { zoom, svg }
+}
+
+// Improved function to get initial transform that properly centers the mindmap
+function getInitialTransform(nodes: d3.HierarchyPointNode<any>[], width: number, height: number) {
+  if (nodes.length === 0) return d3.zoomIdentity
+
+  // Calculate bounds
+  let left = Number.POSITIVE_INFINITY
+  let right = Number.NEGATIVE_INFINITY
+  let top = Number.POSITIVE_INFINITY
+  let bottom = Number.NEGATIVE_INFINITY
+
+  nodes.forEach((d) => {
+    // For each node, consider both its position and any potential text/rectangle
+    // Add a larger buffer to account for node size and ensure proper centering
+    const buffer = d.depth <= 2 ? 150 : 50 // Larger buffer for boxed nodes
+
+    // Note: In d3.tree, x is vertical and y is horizontal
+    const x = d.x // Vertical position
+    const y = d.y // Horizontal position
+
+    if (y - buffer < left) left = y - buffer
+    if (y + buffer > right) right = y + buffer
+    if (x - buffer < top) top = x - buffer
+    if (x + buffer > bottom) bottom = x + buffer
+  })
+
+  // Calculate the center of the mindmap
+  const centerX = (left + right) / 2
+  const centerY = (top + bottom) / 2
+
+  // Calculate the dimensions of the mindmap
+  const mindmapWidth = right - left
+  const mindmapHeight = bottom - top
+
+  // Calculate scale to fit the entire mindmap with some padding
+  // Use a smaller scale factor to ensure the entire mindmap is visible
+  const scale = Math.min((0.8 * width) / mindmapWidth, (0.8 * height) / mindmapHeight, 1.0)
+
+  // Calculate translation to center the mindmap in the viewport
+  // For d3.zoomIdentity.translate, we need to calculate where the center of the viewport should be
+  const translateX = width / 2 - centerX * scale
+  const translateY = height / 2 - centerY * scale
+
+  return d3.zoomIdentity.translate(translateX, translateY).scale(scale)
+}
