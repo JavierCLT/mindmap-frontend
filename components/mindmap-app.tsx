@@ -43,7 +43,11 @@ export const MindmapApp = () => {
         currentTransformRef.current = d3.zoomTransform(svg as any)
       }
     }
+
+    // Update the layout
     setLayout(newLayout)
+
+    // We don't need to reset the transform here since we want to preserve it
   }
 
   // Custom color scheme setter that preserves transform
@@ -56,7 +60,11 @@ export const MindmapApp = () => {
         currentTransformRef.current = d3.zoomTransform(svg as any)
       }
     }
+
+    // Update the color scheme
     setColorScheme(newScheme)
+
+    // We don't need to reset the transform here since we want to preserve it
   }
 
   // Function to render the mindmap with proper centering and transform
@@ -166,12 +174,29 @@ export const MindmapApp = () => {
 
     setIsGenerating(true)
     try {
+      // Store the current transform before generating a new mindmap
+      if (mindmapRef.current) {
+        const svg = mindmapRef.current.querySelector("svg")
+        if (svg) {
+          currentTransformRef.current = d3.zoomTransform(svg as any)
+        }
+      }
+
       const generatedMarkdown = await generateMindmapMarkdown(topic)
       setMarkdown(generatedMarkdown)
       setIsDefaultMindmap(false) // Mark that we're no longer showing the default mindmap
 
       // Reset transform when generating a new mindmap
-      currentTransformRef.current = null
+      // We'll set this to null AFTER the markdown is set and the mindmap is rendered
+      // This ensures we don't lose the transform during the rendering process
+      setTimeout(() => {
+        currentTransformRef.current = null
+
+        // Force a re-render with the new transform
+        if (mindmapRef.current) {
+          renderMindmapWithTransform()
+        }
+      }, 100)
 
       toast({
         title: "Mindmap generated",
@@ -181,7 +206,8 @@ export const MindmapApp = () => {
       console.error("Error generating mindmap:", error)
       toast({
         title: "Error generating mindmap",
-        description: "There was an error generating your mindmap. Please try again.",
+        description:
+          error instanceof Error ? error.message : "There was an error generating your mindmap. Please try again.",
         variant: "destructive",
       })
     } finally {
