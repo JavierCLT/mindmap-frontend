@@ -4,16 +4,16 @@ import { useState, useEffect, useRef } from "react"
 import { Header } from "./header"
 import { Sidebar } from "./sidebar"
 import { generateMindmapMarkdown } from "../lib/generate-mindmap"
+import { defaultMarkdown } from "../lib/default-markdown"
 import { useToast } from "../hooks/use-toast"
 import { useMobile } from "../hooks/use-mobile"
 import { renderMindmap } from "../lib/mindmap-renderer"
 import { parseMarkdown } from "../lib/markdown-parser"
 import { useTheme } from "next-themes"
 import * as d3 from "d3"
-import { Network } from "lucide-react"
 
 export const MindmapApp = () => {
-  const [markdown, setMarkdown] = useState("")
+  const [markdown, setMarkdown] = useState(defaultMarkdown) // Initialize with default markdown
   const [topic, setTopic] = useState("")
   const [isGenerating, setIsGenerating] = useState(false)
   const [layout, setLayout] = useState<"right" | "bi">("bi") // Default to bidirectional
@@ -21,7 +21,7 @@ export const MindmapApp = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true)
   const [isSettingsOpen, setIsSettingsOpen] = useState(false)
   const [mounted, setMounted] = useState(false)
-  const [hasGeneratedMindmap, setHasGeneratedMindmap] = useState(false)
+  const [isDefaultMindmap, setIsDefaultMindmap] = useState(true) // Track if we're showing the default mindmap
   const mindmapRef = useRef<HTMLDivElement>(null)
   const { toast } = useToast()
   const isMobile = useMobile()
@@ -61,7 +61,7 @@ export const MindmapApp = () => {
 
   // Function to render the mindmap with proper centering and transform
   const renderMindmapWithTransform = () => {
-    if (!mindmapRef.current || !mounted || !markdown) return
+    if (!mindmapRef.current || !mounted) return
 
     try {
       // Parse markdown to hierarchical data
@@ -102,15 +102,7 @@ export const MindmapApp = () => {
   useEffect(() => {
     if (!mindmapRef.current || !mounted) return
 
-    // Only render if we have markdown content
-    if (markdown) {
-      renderMindmapWithTransform()
-      setHasGeneratedMindmap(true)
-    } else {
-      // Clear the mindmap container
-      mindmapRef.current.innerHTML = ""
-      setHasGeneratedMindmap(false)
-    }
+    renderMindmapWithTransform()
 
     return () => {
       // Clean up
@@ -131,11 +123,11 @@ export const MindmapApp = () => {
 
   // Handle window resize
   useEffect(() => {
-    if (!mounted || !markdown) return
+    if (!mounted) return
 
     const handleResize = () => {
       // Use a debounce to avoid too many re-renders
-      if (mindmapRef.current && markdown) {
+      if (mindmapRef.current) {
         renderMindmapWithTransform()
       }
     }
@@ -156,11 +148,11 @@ export const MindmapApp = () => {
 
   // Handle theme change
   useEffect(() => {
-    if (!mounted || !markdown) return
+    if (!mounted) return
 
     // Re-render when theme changes to apply correct styles
     renderMindmapWithTransform()
-  }, [theme, resolvedTheme, mounted, markdown])
+  }, [theme, resolvedTheme, mounted])
 
   const handleGenerateMindmap = async () => {
     if (!topic.trim()) {
@@ -176,6 +168,7 @@ export const MindmapApp = () => {
     try {
       const generatedMarkdown = await generateMindmapMarkdown(topic)
       setMarkdown(generatedMarkdown)
+      setIsDefaultMindmap(false) // Mark that we're no longer showing the default mindmap
 
       // Reset transform when generating a new mindmap
       currentTransformRef.current = null
@@ -197,14 +190,7 @@ export const MindmapApp = () => {
   }
 
   const handleExport = async (format: "png" | "interactive") => {
-    if (!mindmapRef.current || !markdown) {
-      toast({
-        title: "No mindmap to export",
-        description: "Please generate a mindmap first",
-        variant: "destructive",
-      })
-      return
-    }
+    if (!mindmapRef.current) return
 
     try {
       // Parse the markdown to get the complete mindmap data
@@ -762,27 +748,6 @@ export const MindmapApp = () => {
           />
         )}
         <div className="flex-1 relative overflow-hidden">
-          {!hasGeneratedMindmap && (
-            <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center">
-              <Network className="h-16 w-16 text-muted-foreground mb-4" />
-              <h2 className="text-2xl font-bold mb-2">Welcome to Mindmap Maker</h2>
-              <p className="text-muted-foreground max-w-md mb-6">
-                Enter a topic in the sidebar and click "Generate Mindmap" to create your mindmap. You can also try
-                one of our example topics to get started quickly.
-              </p>
-              <div className="grid grid-cols-2 gap-2 max-w-md">
-                {["personal finance", "career tips", "plan trip", "learn about ai"].map((exampleTopic) => (
-                  <button
-                    key={exampleTopic}
-                    onClick={() => handleExampleTopic(exampleTopic)}
-                    className="px-4 py-2 text-sm border rounded-md hover:bg-accent transition-colors"
-                  >
-                    {exampleTopic}
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
           <div ref={mindmapRef} className="w-full h-full overflow-hidden" tabIndex={0} />
         </div>
       </div>
