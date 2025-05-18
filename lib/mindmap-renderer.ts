@@ -144,8 +144,16 @@ export function renderMindmap(container: HTMLElement, data: MindmapNode, options
     // Configure tree layouts with increased horizontal spacing
     const treeLayout = d3
       .tree<MindmapNode>()
-      .nodeSize([30, horizontalSpacing]) // Increased horizontal spacing
-      .separation((a, b) => (a.parent === b.parent ? 1.0 : 1.3))
+      .nodeSize([40, horizontalSpacing]) // Increased vertical spacing from 30 to 40
+      .separation((a, b) => {
+        // Increase separation based on depth
+        // Nodes at depth 2 get more separation
+        if (a.depth === 2 || b.depth === 2) {
+          return a.parent === b.parent ? 1.8 : 2.2
+        }
+        // Default separation for other nodes
+        return a.parent === b.parent ? 1.2 : 1.5
+      })
 
     // Apply layouts
     if (leftRoot.children && leftRoot.children.length > 0) {
@@ -183,8 +191,16 @@ export function renderMindmap(container: HTMLElement, data: MindmapNode, options
     // For right layout, use standard tree with increased horizontal spacing
     const treeLayout = d3
       .tree<MindmapNode>()
-      .nodeSize([30, horizontalSpacing]) // Increased horizontal spacing
-      .separation((a, b) => (a.parent === b.parent ? 1.0 : 1.3))
+      .nodeSize([40, horizontalSpacing]) // Increased vertical spacing from 30 to 40
+      .separation((a, b) => {
+        // Increase separation based on depth
+        // Nodes at depth 2 get more separation
+        if (a.depth === 2 || b.depth === 2) {
+          return a.parent === b.parent ? 1.8 : 2.2
+        }
+        // Default separation for other nodes
+        return a.parent === b.parent ? 1.2 : 1.5
+      })
 
     rootNodeProcessed = treeLayout(rootNode)
     rightNodes = rootNodeProcessed.descendants()
