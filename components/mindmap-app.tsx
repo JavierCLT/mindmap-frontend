@@ -4,6 +4,7 @@ import { useState, useEffect, useRef, useCallback } from "react"
 import { Header } from "./header"
 import { Sidebar } from "./sidebar"
 import { LoadingSpinner } from "./loading-spinner"
+import { MobileInput } from "./mobile-input"
 import { generateMindmapMarkdown } from "../lib/generate-mindmap"
 import { defaultMarkdown } from "../lib/default-markdown"
 import { useToast } from "../hooks/use-toast"
@@ -24,6 +25,7 @@ export const MindmapApp = () => {
   const [mounted, setMounted] = useState(false)
   const [isDefaultMindmap, setIsDefaultMindmap] = useState(true) // Track if we're showing the default mindmap
   const mindmapRef = useRef<HTMLDivElement>(null)
+  const sidebarRef = useRef<HTMLDivElement>(null)
   const { toast } = useToast()
   const isMobile = useMobile()
   const { theme, resolvedTheme, setTheme } = useTheme()
@@ -55,6 +57,7 @@ export const MindmapApp = () => {
         colorScheme,
         preserveTransform,
         theme: currentTheme,
+        isMobile, // Pass isMobile flag to renderer
       })
 
       // Store the zoom behavior for later use
@@ -76,7 +79,7 @@ export const MindmapApp = () => {
         variant: "destructive",
       })
     }
-  }, [markdown, layout, colorScheme, resolvedTheme, mounted, toast])
+  }, [markdown, layout, colorScheme, resolvedTheme, mounted, toast, isMobile])
 
   // Update the setLayoutWithTransform function to be more stable:
   const setLayoutWithTransform = useCallback(
@@ -131,6 +134,7 @@ export const MindmapApp = () => {
   // Handle mobile view
   useEffect(() => {
     if (isMobile) {
+      // On mobile, start with sidebar closed
       setIsSidebarOpen(false)
     } else {
       setIsSidebarOpen(true)
@@ -170,6 +174,30 @@ export const MindmapApp = () => {
     renderMindmapWithTransform()
   }, [theme, resolvedTheme, mounted, renderMindmapWithTransform])
 
+  // Handle click outside sidebar to close it on mobile
+  useEffect(() => {
+    if (!mounted || !isMobile) return
+
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        isSidebarOpen &&
+        sidebarRef.current &&
+        !sidebarRef.current.contains(event.target as Node) &&
+        !(event.target as Element).closest('[data-sidebar-trigger="true"]')
+      ) {
+        setIsSidebarOpen(false)
+      }
+    }
+
+    document.addEventListener("mousedown", handleClickOutside)
+    document.addEventListener("touchstart", handleClickOutside)
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside)
+      document.removeEventListener("touchstart", handleClickOutside)
+    }
+  }, [isSidebarOpen, isMobile, mounted])
+
   // Update the handleGenerateMindmap function to better preserve transform:
   const handleGenerateMindmap = async () => {
     if (!topic.trim()) {
@@ -183,15 +211,19 @@ export const MindmapApp = () => {
 
     setIsGenerating(true)
 
+    // Close sidebar on mobile after generating
+    if (isMobile) {
+      setIsSidebarOpen(false)
+    }
+
     // Clear the current mindmap to show the loading spinner
     if (mindmapRef.current) {
       mindmapRef.current.innerHTML = ""
     }
 
     try {
-      // Store the current transform state if we want to preserve it
-      // For new mindmaps, we typically want to reset the transform
-      // currentTransformRef.current = null;
+      // Reset transform for new mindmaps
+      currentTransformRef.current = null
 
       const generatedMarkdown = await generateMindmapMarkdown(topic)
 
@@ -768,22 +800,25 @@ export const MindmapApp = () => {
       <Header toggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)} isSidebarOpen={isSidebarOpen} />
       <div className="flex flex-1 overflow-hidden">
         {isSidebarOpen && (
-          <Sidebar
-            topic={topic}
-            setTopic={handleTopicChange}
-            onGenerate={handleGenerateMindmap}
-            onExport={handleExport}
-            isGenerating={isGenerating}
-            onExampleTopic={handleExampleTopic}
-            isSettingsOpen={isSettingsOpen}
-            layout={layout}
-            setLayout={setLayoutWithTransform}
-            colorScheme={colorScheme}
-            setColorScheme={setColorSchemeWithTransform}
-          />
+          <div ref={sidebarRef} className="z-30 md:z-auto">
+            <Sidebar
+              topic={topic}
+              setTopic={handleTopicChange}
+              onGenerate={handleGenerateMindmap}
+              onExport={handleExport}
+              isGenerating={isGenerating}
+              onExampleTopic={handleExampleTopic}
+              isSettingsOpen={isSettingsOpen}
+              layout={layout}
+              setLayout={setLayoutWithTransform}
+              colorScheme={colorScheme}
+              setColorScheme={setColorSchemeWithTransform}
+            />
+          </div>
         )}
         <div className="flex-1 relative overflow-hidden">
-          <div ref={mindmapRef} className="w-full h-full overflow-hidden" tabIndex={0} />
+          {/* Add padding-bottom on mobile to make room for the fixed input */}
+          <div ref={mindmapRef} className="w-full h-full overflow-hidden md:pb-0 pb-16" tabIndex={0} />
 
           {/* Loading spinner overlay */}
           {isGenerating && (
@@ -796,6 +831,16 @@ export const MindmapApp = () => {
           )}
         </div>
       </div>
+
+      {/* Mobile-only fixed input at bottom of screen */}
+      {isMobile && (
+        <MobileInput
+          topic={topic}
+          setTopic={handleTopicChange}
+          onGenerate={handleGenerateMindmap}
+          isGenerating={isGenerating}
+        />
+      )}
     </div>
   )
 }

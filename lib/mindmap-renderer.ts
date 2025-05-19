@@ -18,6 +18,7 @@ interface RenderOptions {
   preserveTransform?: d3.ZoomTransform // To preserve zoom/pan state
   theme?: "dark" | "light" // Current theme
   forExport?: boolean // Special flag for export mode
+  isMobile?: boolean // Flag for mobile view
 }
 
 // Update the COLOR_SCHEMES object with the new color palettes
@@ -145,7 +146,8 @@ export function renderMindmap(container: HTMLElement, data: MindmapNode, options
   let rootNodeProcessed: d3.HierarchyPointNode<MindmapNode> | null = null
 
   // Increase horizontal spacing between levels
-  const horizontalSpacing = 220 // Increased from 180 to provide more space for text
+  // Use larger spacing on mobile for better visibility
+  const horizontalSpacing = options.isMobile ? 250 : 220
 
   if (options.layout === "bi" && rootNode.children && rootNode.children.length > 0) {
     // Create a copy of the root node for processing
@@ -163,7 +165,7 @@ export function renderMindmap(container: HTMLElement, data: MindmapNode, options
     // Configure tree layouts with increased horizontal spacing and adaptive node separation
     const treeLayout = d3
       .tree<MindmapNode>()
-      .nodeSize([35, horizontalSpacing]) // Base vertical spacing
+      .nodeSize([options.isMobile ? 45 : 35, horizontalSpacing]) // Increased vertical spacing on mobile
       .separation((a, b) => {
         // Check if either node has children at depth 3+
         const aHasDeepChildren = a.children?.some((child) => child.depth >= 3) || false
@@ -173,16 +175,16 @@ export function renderMindmap(container: HTMLElement, data: MindmapNode, options
         if (a.depth === 2 || b.depth === 2) {
           // Increase spacing for depth 2 nodes that have children
           if (aHasDeepChildren || bHasDeepChildren) {
-            return a.parent === b.parent ? 2.2 : 2.5
+            return a.parent === b.parent ? (options.isMobile ? 2.5 : 2.2) : options.isMobile ? 2.8 : 2.5
           }
           // Use standard spacing for depth 2 nodes without children
-          return a.parent === b.parent ? 1.5 : 1.8
+          return a.parent === b.parent ? (options.isMobile ? 1.8 : 1.5) : options.isMobile ? 2.1 : 1.8
         }
         if (a.depth >= 3 || b.depth >= 3) {
-          return a.parent === b.parent ? 1.0 : 1.2
+          return a.parent === b.parent ? (options.isMobile ? 1.3 : 1.0) : options.isMobile ? 1.5 : 1.2
         }
         // Default separation for other nodes
-        return a.parent === b.parent ? 1.2 : 1.5
+        return a.parent === b.parent ? (options.isMobile ? 1.5 : 1.2) : options.isMobile ? 1.8 : 1.5
       })
 
     // Apply layouts
@@ -221,7 +223,7 @@ export function renderMindmap(container: HTMLElement, data: MindmapNode, options
     // For right layout, use standard tree with increased horizontal spacing
     const treeLayout = d3
       .tree<MindmapNode>()
-      .nodeSize([35, horizontalSpacing]) // Base vertical spacing
+      .nodeSize([options.isMobile ? 45 : 35, horizontalSpacing]) // Increased vertical spacing on mobile
       .separation((a, b) => {
         // Check if either node has children at depth 3+
         const aHasDeepChildren = a.children?.some((child) => child.depth >= 3) || false
@@ -231,16 +233,16 @@ export function renderMindmap(container: HTMLElement, data: MindmapNode, options
         if (a.depth === 2 || b.depth === 2) {
           // Increase spacing for depth 2 nodes that have children
           if (aHasDeepChildren || bHasDeepChildren) {
-            return a.parent === b.parent ? 2.2 : 2.5
+            return a.parent === b.parent ? (options.isMobile ? 2.5 : 2.2) : options.isMobile ? 2.8 : 2.5
           }
           // Use standard spacing for depth 2 nodes without children
-          return a.parent === b.parent ? 1.5 : 1.8
+          return a.parent === b.parent ? (options.isMobile ? 1.8 : 1.5) : options.isMobile ? 2.1 : 1.8
         }
         if (a.depth >= 3 || b.depth >= 3) {
-          return a.parent === b.parent ? 1.0 : 1.2
+          return a.parent === b.parent ? (options.isMobile ? 1.3 : 1.0) : options.isMobile ? 1.5 : 1.2
         }
         // Default separation for other nodes
-        return a.parent === b.parent ? 1.2 : 1.5
+        return a.parent === b.parent ? (options.isMobile ? 1.5 : 1.2) : options.isMobile ? 1.8 : 1.5
       })
 
     rootNodeProcessed = treeLayout(rootNode)
@@ -386,15 +388,16 @@ export function renderMindmap(container: HTMLElement, data: MindmapNode, options
   }
 
   // Define max widths for different node types with adaptive sizing
+  // Use larger text boxes on mobile
   const maxWidths = {
-    title: 180, // Root node (depth 0)
-    mainBranch: 160, // First level (depth 1)
+    title: options.isMobile ? 220 : 180, // Root node (depth 0)
+    mainBranch: options.isMobile ? 180 : 160, // First level (depth 1)
     subBranch: (d: d3.HierarchyPointNode<MindmapNode>) => {
       // Allow longer text for depth 2 nodes that don't have children
       if (d.depth === 2 && (!d.children || d.children.length === 0)) {
-        return 160 // Wider boxes for childless depth 2 nodes
+        return options.isMobile ? 180 : 160 // Wider boxes for childless depth 2 nodes
       }
-      return 120 // Standard width for depth 2 nodes with children
+      return options.isMobile ? 140 : 120 // Standard width for depth 2 nodes with children
     },
   }
 
@@ -414,7 +417,7 @@ export function renderMindmap(container: HTMLElement, data: MindmapNode, options
     .filter((d) => d.depth > 2)
     .append("circle")
     .attr("class", "mindmap-node-circle")
-    .attr("r", 4) // Smaller circles like in markmap
+    .attr("r", options.isMobile ? 5 : 4) // Slightly larger circles on mobile
     .attr("cx", 0)
     .attr("cy", 0)
     .attr("fill", getNodeColor)
@@ -471,7 +474,13 @@ export function renderMindmap(container: HTMLElement, data: MindmapNode, options
 
       return textColor // Use theme text color for non-boxed nodes
     })
-    .attr("font-size", (d) => (d.depth === 0 ? "18px" : "14px")) // Larger font for title
+    .attr("font-size", (d) => {
+      // Larger font sizes on mobile
+      if (options.isMobile) {
+        return d.depth === 0 ? "20px" : d.depth === 1 ? "16px" : "14px"
+      }
+      return d.depth === 0 ? "18px" : "14px"
+    })
     .attr("font-weight", (d) => (d.depth <= 1 ? "bold" : "normal")) // Bold text for root and first level
 
   // Apply text wrapping based on depth
@@ -505,17 +514,39 @@ export function renderMindmap(container: HTMLElement, data: MindmapNode, options
     if (!textNode) return
 
     // Check if we have cached dimensions for this node and text content
-    const cacheKey = `${nodeId}-${d.data.name}`
+    const cacheKey = `${nodeId}-${d.data.name}-${options.isMobile ? "mobile" : "desktop"}`
     let dimensions = nodeDimensionsCache.get(cacheKey)
 
     if (!dimensions) {
       // Get bounding box of the text (which may now be multi-line)
       const textBBox = (textNode as SVGTextElement).getBBox()
 
-      // Set padding based on depth
+      // Set padding based on depth and mobile status
       const padding = {
-        horizontal: d.depth === 0 ? 20 : d.depth === 1 ? 15 : 10,
-        vertical: d.depth === 0 ? 10 : d.depth === 1 ? 8 : 6,
+        horizontal:
+          d.depth === 0
+            ? options.isMobile
+              ? 24
+              : 20
+            : d.depth === 1
+              ? options.isMobile
+                ? 18
+                : 15
+              : options.isMobile
+                ? 12
+                : 10,
+        vertical:
+          d.depth === 0
+            ? options.isMobile
+              ? 12
+              : 10
+            : d.depth === 1
+              ? options.isMobile
+                ? 10
+                : 8
+              : options.isMobile
+                ? 8
+                : 6,
       }
 
       // Calculate dimensions
@@ -578,11 +609,11 @@ export function renderMindmap(container: HTMLElement, data: MindmapNode, options
     .attr("d", linkGenerator)
     .attr("fill", "none")
     .attr("stroke", (d) => getNodeColor(d.source)) // Color links based on source node depth
-    .attr("stroke-width", 2)
+    .attr("stroke-width", options.isMobile ? 2.5 : 2) // Slightly thicker lines on mobile
     .attr("stroke-opacity", 0.8)
 
   // Calculate the initial transform to center the mindmap
-  const initialTransform = getInitialTransform(allNodes, width, height)
+  const initialTransform = getInitialTransform(allNodes, width, height, options.isMobile)
 
   // Apply transform based on options
   if (options.preserveTransform && !options.forExport) {
@@ -598,7 +629,7 @@ export function renderMindmap(container: HTMLElement, data: MindmapNode, options
 }
 
 // Improved function to get initial transform that properly centers the mindmap
-function getInitialTransform(nodes: d3.HierarchyPointNode<any>[], width: number, height: number) {
+function getInitialTransform(nodes: d3.HierarchyPointNode<any>[], width: number, height: number, isMobile = false) {
   if (nodes.length === 0) return d3.zoomIdentity
 
   // Calculate bounds
@@ -610,7 +641,8 @@ function getInitialTransform(nodes: d3.HierarchyPointNode<any>[], width: number,
   nodes.forEach((d) => {
     // For each node, consider both its position and any potential text/rectangle
     // Add a larger buffer to account for node size and ensure proper centering
-    const buffer = d.depth <= 2 ? 150 : 50 // Larger buffer for boxed nodes
+    // Use even larger buffer on mobile for better visibility
+    const buffer = d.depth <= 2 ? (isMobile ? 180 : 150) : isMobile ? 70 : 50
 
     // Note: In d3.tree, x is vertical and y is horizontal
     const x = d.x // Vertical position
@@ -631,8 +663,13 @@ function getInitialTransform(nodes: d3.HierarchyPointNode<any>[], width: number,
   const mindmapHeight = bottom - top
 
   // Calculate scale to fit the entire mindmap with some padding
-  // Use a smaller scale factor to ensure the entire mindmap is visible
-  const scale = Math.min((0.8 * width) / mindmapWidth, (0.8 * height) / mindmapHeight, 1.0)
+  // Use a larger scale factor on mobile for better visibility
+  const scaleFactor = isMobile ? 0.9 : 0.8
+  const scale = Math.min(
+    (scaleFactor * width) / mindmapWidth,
+    (scaleFactor * height) / mindmapHeight,
+    isMobile ? 1.2 : 1.0,
+  )
 
   // Calculate translation to center the mindmap in the viewport
   // For d3.zoomIdentity.translate, we need to calculate where the center of the viewport should be
