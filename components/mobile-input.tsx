@@ -37,7 +37,7 @@ export function MobileInput({ topic, setTopic, onGenerate, isGenerating }: Mobil
           <Input
             value={topic}
             onChange={handleInputChange}
-            placeholder="Enter a topic... e.g., personal finance"
+            placeholder="Enter a topic... e.g., how to budget"
             className="w-full text-sm"
             maxLength={MAX_CHARS}
           />

@@ -147,7 +147,7 @@ export function renderMindmap(container: HTMLElement, data: MindmapNode, options
 
   // Increase horizontal spacing between levels
   // Use larger spacing on mobile for better visibility
-  const horizontalSpacing = options.isMobile ? 180 : 220 // Reduced spacing on mobile for better centering
+  const horizontalSpacing = options.isMobile ? 200 : 220 // Increased spacing on mobile for better separation
 
   if (options.layout === "bi" && rootNode.children && rootNode.children.length > 0) {
     // Create a copy of the root node for processing
@@ -165,7 +165,7 @@ export function renderMindmap(container: HTMLElement, data: MindmapNode, options
     // Configure tree layouts with increased horizontal spacing and adaptive node separation
     const treeLayout = d3
       .tree<MindmapNode>()
-      .nodeSize([options.isMobile ? 45 : 35, horizontalSpacing]) // Increased vertical spacing on mobile
+      .nodeSize([options.isMobile ? 50 : 35, horizontalSpacing]) // Increased vertical spacing on mobile
       .separation((a, b) => {
         // Check if either node has children at depth 3+
         const aHasDeepChildren = a.children?.some((child) => child.depth >= 3) || false
@@ -175,16 +175,16 @@ export function renderMindmap(container: HTMLElement, data: MindmapNode, options
         if (a.depth === 2 || b.depth === 2) {
           // Increase spacing for depth 2 nodes that have children
           if (aHasDeepChildren || bHasDeepChildren) {
-            return a.parent === b.parent ? (options.isMobile ? 2.5 : 2.2) : options.isMobile ? 2.8 : 2.5
+            return a.parent === b.parent ? (options.isMobile ? 2.8 : 2.2) : options.isMobile ? 3.0 : 2.5
           }
           // Use standard spacing for depth 2 nodes without children
-          return a.parent === b.parent ? (options.isMobile ? 1.8 : 1.5) : options.isMobile ? 2.1 : 1.8
+          return a.parent === b.parent ? (options.isMobile ? 2.0 : 1.5) : options.isMobile ? 2.3 : 1.8
         }
         if (a.depth >= 3 || b.depth >= 3) {
-          return a.parent === b.parent ? (options.isMobile ? 1.3 : 1.0) : options.isMobile ? 1.5 : 1.2
+          return a.parent === b.parent ? (options.isMobile ? 1.5 : 1.0) : options.isMobile ? 1.7 : 1.2
         }
         // Default separation for other nodes
-        return a.parent === b.parent ? (options.isMobile ? 1.5 : 1.2) : options.isMobile ? 1.8 : 1.5
+        return a.parent === b.parent ? (options.isMobile ? 1.8 : 1.2) : options.isMobile ? 2.0 : 1.5
       })
 
     // Apply layouts
@@ -223,7 +223,7 @@ export function renderMindmap(container: HTMLElement, data: MindmapNode, options
     // For right layout, use standard tree with increased horizontal spacing
     const treeLayout = d3
       .tree<MindmapNode>()
-      .nodeSize([options.isMobile ? 45 : 35, horizontalSpacing]) // Increased vertical spacing on mobile
+      .nodeSize([options.isMobile ? 50 : 35, horizontalSpacing]) // Increased vertical spacing on mobile
       .separation((a, b) => {
         // Check if either node has children at depth 3+
         const aHasDeepChildren = a.children?.some((child) => child.depth >= 3) || false
@@ -233,16 +233,16 @@ export function renderMindmap(container: HTMLElement, data: MindmapNode, options
         if (a.depth === 2 || b.depth === 2) {
           // Increase spacing for depth 2 nodes that have children
           if (aHasDeepChildren || bHasDeepChildren) {
-            return a.parent === b.parent ? (options.isMobile ? 2.5 : 2.2) : options.isMobile ? 2.8 : 2.5
+            return a.parent === b.parent ? (options.isMobile ? 2.8 : 2.2) : options.isMobile ? 3.0 : 2.5
           }
           // Use standard spacing for depth 2 nodes without children
-          return a.parent === b.parent ? (options.isMobile ? 1.8 : 1.5) : options.isMobile ? 2.1 : 1.8
+          return a.parent === b.parent ? (options.isMobile ? 2.0 : 1.5) : options.isMobile ? 2.3 : 1.8
         }
         if (a.depth >= 3 || b.depth >= 3) {
-          return a.parent === b.parent ? (options.isMobile ? 1.3 : 1.0) : options.isMobile ? 1.5 : 1.2
+          return a.parent === b.parent ? (options.isMobile ? 1.5 : 1.0) : options.isMobile ? 1.7 : 1.2
         }
         // Default separation for other nodes
-        return a.parent === b.parent ? (options.isMobile ? 1.5 : 1.2) : options.isMobile ? 1.8 : 1.5
+        return a.parent === b.parent ? (options.isMobile ? 1.8 : 1.2) : options.isMobile ? 2.0 : 1.5
       })
 
     rootNodeProcessed = treeLayout(rootNode)
@@ -391,13 +391,13 @@ export function renderMindmap(container: HTMLElement, data: MindmapNode, options
   // Use larger text boxes on mobile
   const maxWidths = {
     title: options.isMobile ? 220 : 180, // Root node (depth 0)
-    mainBranch: options.isMobile ? 180 : 160, // First level (depth 1)
+    mainBranch: options.isMobile ? 200 : 160, // First level (depth 1) - Increased for mobile
     subBranch: (d: d3.HierarchyPointNode<MindmapNode>) => {
       // Allow longer text for depth 2 nodes that don't have children
       if (d.depth === 2 && (!d.children || d.children.length === 0)) {
-        return options.isMobile ? 180 : 160 // Wider boxes for childless depth 2 nodes
+        return options.isMobile ? 200 : 160 // Wider boxes for childless depth 2 nodes
       }
-      return options.isMobile ? 140 : 120 // Standard width for depth 2 nodes with children
+      return options.isMobile ? 160 : 120 // Standard width for depth 2 nodes with children
     },
   }
 
@@ -530,10 +530,10 @@ export function renderMindmap(container: HTMLElement, data: MindmapNode, options
               : 20
             : d.depth === 1
               ? options.isMobile
-                ? 18
+                ? 20
                 : 15
               : options.isMobile
-                ? 12
+                ? 14
                 : 10,
         vertical:
           d.depth === 0
@@ -676,16 +676,16 @@ function getInitialTransform(
     // For mobile, use a smaller scale factor to ensure the entire mindmap is visible
     // and adjust based on layout
     if (layout === "right") {
-      scaleFactor = 0.65 // Smaller scale for right layout on mobile to show more content
+      scaleFactor = 0.55 // Smaller scale for right layout on mobile to show more content
     } else {
-      scaleFactor = 0.6 // Even smaller scale for bidirectional layout on mobile
+      scaleFactor = 0.5 // Even smaller scale for bidirectional layout on mobile
     }
   }
 
   const scale = Math.min(
     (scaleFactor * width) / mindmapWidth,
     (scaleFactor * height) / mindmapHeight,
-    isMobile ? 0.8 : 1.0, // Cap the maximum scale on mobile
+    isMobile ? 0.7 : 1.0, // Cap the maximum scale on mobile
   )
 
   // Calculate translation to center the mindmap in the viewport
@@ -696,14 +696,14 @@ function getInitialTransform(
   // For right layout on mobile, we need to shift the mindmap left
   // to account for the root node being at the left edge
   if (isMobile && layout === "right") {
-    // Instead of shifting by a percentage, calculate the actual offset needed
-    // based on the root node position
+    // Find the root node
     const rootNode = nodes.find((n) => n.depth === 0)
     if (rootNode) {
       // Calculate how far from the left edge the root node is
       const rootX = rootNode.y
-      // Adjust the translation to center the mindmap better
-      translateX = width / 2 - rootX * scale
+      // Adjust the translation to position the root node more to the left
+      // This gives more space for the right side of the mindmap
+      translateX = width * 0.3 - rootX * scale
     }
   }
 

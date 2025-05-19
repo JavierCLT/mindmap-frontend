@@ -81,7 +81,7 @@ export function Sidebar({
                 id="topic"
                 value={topic}
                 onChange={handleInputChange}
-                placeholder="e.g., artificial intelligence"
+                placeholder="e.g., how to budget"
                 maxLength={MAX_CHARS}
               />
             </div>

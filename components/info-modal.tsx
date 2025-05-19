@@ -30,7 +30,7 @@ export function InfoModal({ isOpen, onClose }: InfoModalProps) {
           <div>
             <h3 className="font-medium">Features:</h3>
             <ul className="list-disc pl-5 text-sm">
-              <li>AI-powered mindmap generation</li>
+              <li>AI-powered mindmap generation. It can make mistakes</li>
               <li>Multiple layout options</li>
               <li>Customizable color schemes</li>
               <li>Interactive visualization</li>
