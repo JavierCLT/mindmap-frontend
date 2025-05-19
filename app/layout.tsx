@@ -30,8 +30,8 @@ export const metadata: Metadata = {
     canonical: "https://mind-map-maker.com",
   },
   icons: {
-    icon: "/network-icon.png",
-    apple: "/network-icon.png",
+    icon: "/network-icon-black-bg.png",
+    apple: "/network-icon-black-bg.png",
   },
     generator: 'v0.dev'
 }
@@ -45,8 +45,8 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <head>
         <meta name="viewport" content="width=device-width, initial-scale=1" />
-        <link rel="icon" href="/network-icon.png" type="image/svg+xml" />
-        <link rel="apple-touch-icon" href="/network-icon.png" />
+        <link rel="icon" href="/network-icon-black-bg.png" type="image/png" />
+        <link rel="apple-touch-icon" href="/network-icon-black-bg.png" />
         <link rel="manifest" href="/manifest.json" />
         <meta name="theme-color" content="#3b82f6" />
         {/* Plausible Analytics */}

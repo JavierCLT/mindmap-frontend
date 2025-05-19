@@ -8,14 +8,14 @@
   "theme_color": "#3b82f6",
   "icons": [
     {
-      "src": "/network-icon.png",
-      "sizes": "any",
-      "type": "image/svg+xml"
+      "src": "/network-icon-black-bg.png",
+      "sizes": "512x512",
+      "type": "image/png"
     },
     {
-      "src": "/network-icon-bg.png",
+      "src": "/network-icon-black-bg.png",
       "sizes": "512x512",
-      "type": "image/svg+xml",
+      "type": "image/png",
       "purpose": "any maskable"
     }
   ]

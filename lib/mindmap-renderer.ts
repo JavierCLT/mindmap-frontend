@@ -460,7 +460,7 @@ export function renderMindmap(container: HTMLElement, data: MindmapNode, options
 
         // For default scheme, use black text for yellow (#E9C46A) and white for others
         if (options.colorScheme === "default") {
-          return nodeColor === "#E9C46A" ? "#000000" : "#ffffff"
+          return nodeColor === "#E9C46A" || nodeColor === "#F4A261" ? "#000000" : "#ffffff"
         }
 
         // For vibrant scheme, use black text for yellow (#FFD166) and white for others
