@@ -1,5 +1,8 @@
 "use client"
 
+import type React from "react"
+
+import { useState, useEffect } from "react"
 import { Button } from "../components/ui/button"
 import { Input } from "../components/ui/input"
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card"
@@ -35,6 +38,9 @@ export function Sidebar({
   colorScheme,
   setColorScheme,
 }: SidebarProps) {
+  const MAX_CHARS = 90
+  const [charCount, setCharCount] = useState(0)
+
   // Updated example topics
   const exampleTopics = ["personal finance", "career tips", "plan trip", "learn about ai"]
 
@@ -44,6 +50,19 @@ export function Sidebar({
     vibrant: ["#EF476F", "#FFD166", "#118AB2", "#06D6A0"],
     summer: ["#70D6FF", "#FF70A6", "#FFD670", "#E9FF70"],
     monochrome: ["#00A6FB", "#0582CA", "#006494", "#003554"],
+  }
+
+  // Update character count when topic changes
+  useEffect(() => {
+    setCharCount(topic.length)
+  }, [topic])
+
+  // Handle input change with character limit
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newValue = e.target.value
+    if (newValue.length <= MAX_CHARS) {
+      setTopic(newValue)
+    }
   }
 
   return (
@@ -57,18 +76,27 @@ export function Sidebar({
             <label htmlFor="topic" className="text-sm font-medium">
               Enter a topic
             </label>
-            <Input
-              id="topic"
-              value={topic}
-              onChange={(e) => setTopic(e.target.value)}
-              placeholder="e.g., artificial intelligence"
-            />
+            <div className="relative">
+              <Input
+                id="topic"
+                value={topic}
+                onChange={handleInputChange}
+                placeholder="e.g., artificial intelligence"
+                maxLength={MAX_CHARS}
+                className="pr-16"
+              />
+              <div
+                className={`absolute right-2 top-1/2 -translate-y-1/2 text-xs ${charCount >= MAX_CHARS ? "text-red-500 font-bold" : charCount > MAX_CHARS * 0.8 ? "text-amber-500" : "text-muted-foreground"}`}
+              >
+                {charCount}/{MAX_CHARS}
+              </div>
+            </div>
           </div>
 
           <Button
             className="w-full bg-emerald-500 hover:bg-emerald-600 text-white"
             onClick={onGenerate}
-            disabled={isGenerating}
+            disabled={isGenerating || charCount === 0 || charCount > MAX_CHARS}
           >
             {isGenerating ? "Generating..." : "Generate Mindmap"}
           </Button>

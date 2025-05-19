@@ -222,10 +222,21 @@ export const MindmapApp = () => {
 
   // Update the handleGenerateMindmap function to better preserve transform:
   const handleGenerateMindmap = async () => {
+    const MAX_CHARS = 90
+
     if (!topic.trim()) {
       toast({
         title: "Topic is required",
         description: "Please enter a topic to generate a mindmap",
+        variant: "destructive",
+      })
+      return
+    }
+
+    if (topic.length > MAX_CHARS) {
+      toast({
+        title: "Topic too long",
+        description: `Please limit your topic to ${MAX_CHARS} characters or less`,
         variant: "destructive",
       })
       return
