@@ -38,14 +38,9 @@ export function MobileInput({ topic, setTopic, onGenerate, isGenerating }: Mobil
             value={topic}
             onChange={handleInputChange}
             placeholder="Enter a topic... e.g., personal finance"
-            className="w-full pr-16"
+            className="w-full"
             maxLength={MAX_CHARS}
           />
-          <div
-            className={`absolute right-2 top-1/2 -translate-y-1/2 text-xs ${charCount >= MAX_CHARS ? "text-red-500 font-bold" : charCount > MAX_CHARS * 0.8 ? "text-amber-500" : "text-muted-foreground"}`}
-          >
-            {charCount}/{MAX_CHARS}
-          </div>
         </div>
         <Button
           onClick={onGenerate}

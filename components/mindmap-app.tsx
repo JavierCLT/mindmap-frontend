@@ -32,6 +32,7 @@ export const MindmapApp = () => {
   const { theme, resolvedTheme, setTheme } = useTheme()
   const currentTransformRef = useRef<any>(null)
   const zoomRef = useRef<any>(null)
+  const lastThemeRef = useRef<string | undefined>(undefined) // Track the last theme to detect changes
 
   // Handle mounted state to avoid hydration mismatch
   useEffect(() => {
@@ -188,12 +189,21 @@ export const MindmapApp = () => {
     }
   }, [markdown, layout, colorScheme, resolvedTheme, mounted, renderMindmapWithTransform, isDefaultMindmap])
 
-  // Handle theme change
+  // Handle theme change - UPDATED to preserve transform
   useEffect(() => {
     if (!mounted) return
 
-    // Re-render when theme changes to apply correct styles
-    renderMindmapWithTransform()
+    // Only capture the current transform when the theme actually changes
+    if (lastThemeRef.current !== resolvedTheme) {
+      // Store the current transform before theme change
+      const currentTransform = currentTransformRef.current
+
+      // Re-render when theme changes to apply correct styles
+      renderMindmapWithTransform()
+
+      // Update the last theme reference
+      lastThemeRef.current = resolvedTheme as string
+    }
   }, [theme, resolvedTheme, mounted, renderMindmapWithTransform])
 
   // Handle click outside sidebar to close it on mobile

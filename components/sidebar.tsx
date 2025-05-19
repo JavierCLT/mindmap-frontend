@@ -83,13 +83,7 @@ export function Sidebar({
                 onChange={handleInputChange}
                 placeholder="e.g., artificial intelligence"
                 maxLength={MAX_CHARS}
-                className="pr-16"
               />
-              <div
-                className={`absolute right-2 top-1/2 -translate-y-1/2 text-xs ${charCount >= MAX_CHARS ? "text-red-500 font-bold" : charCount > MAX_CHARS * 0.8 ? "text-amber-500" : "text-muted-foreground"}`}
-              >
-                {charCount}/{MAX_CHARS}
-              </div>
             </div>
           </div>
 
