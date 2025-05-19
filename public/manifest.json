@@ -1,0 +1,22 @@
+{
+  "name": "Mindmap Maker",
+  "short_name": "Mindmap",
+  "description": "AI-powered mindmap creation tool",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#3b82f6",
+  "icons": [
+    {
+      "src": "/network-icon.png",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    },
+    {
+      "src": "/network-icon-bg.png",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

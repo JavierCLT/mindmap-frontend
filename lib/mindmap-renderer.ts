@@ -80,7 +80,24 @@ const COLOR_SCHEMES = {
   ],
 }
 
+// Cache for node dimensions to prevent fluttering
+const nodeDimensionsCache = new Map<string, { width: number; height: number }>()
+
 export function renderMindmap(container: HTMLElement, data: MindmapNode, options: RenderOptions) {
+  // Debounce transform updates to prevent fluttering
+  let transformUpdateTimeout: number | null = null
+  const currentTransformRef: { current: any } = { current: null }
+  const updateTransform = (newTransform: any) => {
+    if (transformUpdateTimeout) {
+      clearTimeout(transformUpdateTimeout)
+    }
+
+    transformUpdateTimeout = window.setTimeout(() => {
+      currentTransformRef.current = newTransform
+      transformUpdateTimeout = null
+    }, 100) as unknown as number
+  }
+
   // Clear container
   container.innerHTML = ""
 
@@ -100,6 +117,8 @@ export function renderMindmap(container: HTMLElement, data: MindmapNode, options
   // Create a zoom behavior
   const zoom = d3.zoom<SVGSVGElement, unknown>().on("zoom", (event) => {
     g.attr("transform", event.transform)
+    // Update transform with debounce
+    updateTransform(event.transform)
   })
 
   // Only add zoom behavior if not in export mode
@@ -141,17 +160,26 @@ export function renderMindmap(container: HTMLElement, data: MindmapNode, options
     // Create right side hierarchy
     const rightRoot = d3.hierarchy({ ...data, children: data.children?.slice(midPoint) })
 
-    // Configure tree layouts with increased horizontal spacing
+    // Configure tree layouts with increased horizontal spacing and adaptive node separation
     const treeLayout = d3
       .tree<MindmapNode>()
-      .nodeSize([35, horizontalSpacing]) // Reduced vertical spacing from 40 to 35
+      .nodeSize([35, horizontalSpacing]) // Base vertical spacing
       .separation((a, b) => {
-        // Adjust separation based on depth
+        // Check if either node has children at depth 3+
+        const aHasDeepChildren = a.children?.some((child) => child.depth >= 3) || false
+        const bHasDeepChildren = b.children?.some((child) => child.depth >= 3) || false
+
+        // Adjust separation based on depth and whether nodes have children
         if (a.depth === 2 || b.depth === 2) {
-          return a.parent === b.parent ? 1.5 : 1.8 // Reduced from 1.8/2.2
+          // Increase spacing for depth 2 nodes that have children
+          if (aHasDeepChildren || bHasDeepChildren) {
+            return a.parent === b.parent ? 2.2 : 2.5
+          }
+          // Use standard spacing for depth 2 nodes without children
+          return a.parent === b.parent ? 1.5 : 1.8
         }
         if (a.depth >= 3 || b.depth >= 3) {
-          return a.parent === b.parent ? 1.0 : 1.2 // Even smaller spacing for depth 3+
+          return a.parent === b.parent ? 1.0 : 1.2
         }
         // Default separation for other nodes
         return a.parent === b.parent ? 1.2 : 1.5
@@ -193,14 +221,23 @@ export function renderMindmap(container: HTMLElement, data: MindmapNode, options
     // For right layout, use standard tree with increased horizontal spacing
     const treeLayout = d3
       .tree<MindmapNode>()
-      .nodeSize([35, horizontalSpacing]) // Reduced vertical spacing from 40 to 35
+      .nodeSize([35, horizontalSpacing]) // Base vertical spacing
       .separation((a, b) => {
-        // Adjust separation based on depth
+        // Check if either node has children at depth 3+
+        const aHasDeepChildren = a.children?.some((child) => child.depth >= 3) || false
+        const bHasDeepChildren = b.children?.some((child) => child.depth >= 3) || false
+
+        // Adjust separation based on depth and whether nodes have children
         if (a.depth === 2 || b.depth === 2) {
-          return a.parent === b.parent ? 1.5 : 1.8 // Reduced from 1.8/2.2
+          // Increase spacing for depth 2 nodes that have children
+          if (aHasDeepChildren || bHasDeepChildren) {
+            return a.parent === b.parent ? 2.2 : 2.5
+          }
+          // Use standard spacing for depth 2 nodes without children
+          return a.parent === b.parent ? 1.5 : 1.8
         }
         if (a.depth >= 3 || b.depth >= 3) {
-          return a.parent === b.parent ? 1.0 : 1.2 // Even smaller spacing for depth 3+
+          return a.parent === b.parent ? 1.0 : 1.2
         }
         // Default separation for other nodes
         return a.parent === b.parent ? 1.2 : 1.5
@@ -273,6 +310,9 @@ export function renderMindmap(container: HTMLElement, data: MindmapNode, options
       const y = text.attr("y") || "0"
       const dy = Number.parseFloat(text.attr("dy") || "0")
 
+      // IMPORTANT: Use a fixed character width approximation for more stable wrapping
+      const avgCharWidth = 6.5 // Average character width in pixels (approximation)
+
       let line: string[] = []
       let lineNumber = 0
       let word: string | undefined
@@ -284,9 +324,11 @@ export function renderMindmap(container: HTMLElement, data: MindmapNode, options
 
       while ((word = tempWords.pop())) {
         tempLine.push(word)
-        text.text(tempLine.join(" "))
+        const lineText = tempLine.join(" ")
+        // Use character count * avgCharWidth for more stable width calculation
+        const estimatedWidth = lineText.length * avgCharWidth
 
-        if (text.node()!.getComputedTextLength() > maxWidth && tempLine.length > 1) {
+        if (estimatedWidth > maxWidth && tempLine.length > 1) {
           tempLine.pop()
           lines.push(tempLine.join(" "))
           tempLine = [word]
@@ -321,9 +363,10 @@ export function renderMindmap(container: HTMLElement, data: MindmapNode, options
       line = []
       while ((word = words.pop())) {
         line.push(word)
-        tspan.text(line.join(" "))
+        const lineText = line.join(" ")
+        const estimatedWidth = lineText.length * avgCharWidth
 
-        if (tspan.node()!.getComputedTextLength() > maxWidth && line.length > 1) {
+        if (estimatedWidth > maxWidth && line.length > 1) {
           line.pop()
           tspan.text(line.join(" "))
           line = [word]
@@ -335,16 +378,24 @@ export function renderMindmap(container: HTMLElement, data: MindmapNode, options
             .attr("dy", lineHeight + "em")
             .attr("text-anchor", text.attr("text-anchor"))
             .text(word)
+        } else {
+          tspan.text(lineText)
         }
       }
     })
   }
 
-  // Define max widths for different node types - REDUCED WIDTH FOR TITLE
+  // Define max widths for different node types with adaptive sizing
   const maxWidths = {
-    title: 180, // Root node (depth 0) - significantly reduced to force wrapping
-    mainBranch: 160, // First level (depth 1) - reduced
-    subBranch: 120, // Second level (depth 2) - significantly reduced to force 2 rows
+    title: 180, // Root node (depth 0)
+    mainBranch: 160, // First level (depth 1)
+    subBranch: (d: d3.HierarchyPointNode<MindmapNode>) => {
+      // Allow longer text for depth 2 nodes that don't have children
+      if (d.depth === 2 && (!d.children || d.children.length === 0)) {
+        return 160 // Wider boxes for childless depth 2 nodes
+      }
+      return 120 // Standard width for depth 2 nodes with children
+    },
   }
 
   // Add background rectangles for title, main branches, and second level branches (depth 0, 1, 2)
@@ -433,7 +484,7 @@ export function renderMindmap(container: HTMLElement, data: MindmapNode, options
       // Adjust max width based on depth
       if (d.depth === 0) maxWidth = maxWidths.title
       else if (d.depth === 1) maxWidth = maxWidths.mainBranch
-      else maxWidth = maxWidths.subBranch
+      else maxWidth = typeof maxWidths.subBranch === "function" ? maxWidths.subBranch(d) : maxWidths.subBranch
 
       // Apply text wrapping
       wrapText(textElement, maxWidth)
@@ -449,36 +500,44 @@ export function renderMindmap(container: HTMLElement, data: MindmapNode, options
   nodeRects.each(function (d) {
     const rect = d3.select(this)
     const textNode = d3.select(this.parentNode).select("text").node()
+    const nodeId = d.data.id
 
     if (!textNode) return
 
-    // Get bounding box of the text (which may now be multi-line)
-    const textBBox = (textNode as SVGTextElement).getBBox()
+    // Check if we have cached dimensions for this node and text content
+    const cacheKey = `${nodeId}-${d.data.name}`
+    let dimensions = nodeDimensionsCache.get(cacheKey)
 
-    // Set padding based on depth
-    const padding = {
-      horizontal: d.depth === 0 ? 20 : d.depth === 1 ? 15 : 10, // Reduced padding for title
-      vertical: d.depth === 0 ? 10 : d.depth === 1 ? 8 : 6, // Reduced padding for title
+    if (!dimensions) {
+      // Get bounding box of the text (which may now be multi-line)
+      const textBBox = (textNode as SVGTextElement).getBBox()
+
+      // Set padding based on depth
+      const padding = {
+        horizontal: d.depth === 0 ? 20 : d.depth === 1 ? 15 : 10,
+        vertical: d.depth === 0 ? 10 : d.depth === 1 ? 8 : 6,
+      }
+
+      // Calculate dimensions
+      const rectHeight = textBBox.height + padding.vertical * 2
+      const rectWidth = textBBox.width + padding.horizontal * 2
+
+      // Cache the dimensions
+      dimensions = { width: rectWidth, height: rectHeight }
+      nodeDimensionsCache.set(cacheKey, dimensions)
     }
 
-    // Set rectangle height based on text height
-    const rectHeight = textBBox.height + padding.vertical * 2
-    rect.attr("height", rectHeight)
-    rect.attr("y", -rectHeight / 2)
-
-    // Set rectangle width based on text width
-    const rectWidth = textBBox.width + padding.horizontal * 2
-    rect.attr("width", rectWidth)
-
-    // Position rectangle centered on the node for all boxed nodes
-    rect.attr("x", -rectWidth / 2)
+    // Apply the dimensions
+    rect.attr("height", dimensions.height)
+    rect.attr("y", -dimensions.height / 2)
+    rect.attr("width", dimensions.width)
+    rect.attr("x", -dimensions.width / 2)
 
     // Store dimensions for link connections
-    nodeDimensions.set(d.data.id, { width: rectWidth, height: rectHeight })
+    nodeDimensions.set(d.data.id, dimensions)
   })
 
-  // Create curved links with longer horizontal sections
-  // Updated to connect to the sides of rectangles for depth 1 and 2 nodes
+  // Create curved links with longer horizontal sections and better spacing
   const linkGenerator = (d: d3.HierarchyPointLink<any>) => {
     const source = { x: d.source.x, y: d.source.y }
     const target = { x: d.target.x, y: d.target.y }
@@ -499,14 +558,14 @@ export function renderMindmap(container: HTMLElement, data: MindmapNode, options
     }
 
     // Calculate control points for a smooth curve with longer horizontal sections
-    // Move the curve bend point closer to the target to create a longer horizontal section
-    const bendPoint = 0.75 // Adjust this value between 0.5 and 0.9 to control the horizontal section length
+    // Adjust the bend point based on whether the target is a depth 3 node
+    const bendPoint = d.target.depth >= 3 ? 0.8 : 0.75
     const midY = source.y + (target.y - source.y) * bendPoint
 
     return `M${source.y},${source.x}
-            C${midY},${source.x}
-             ${midY},${target.x}
-             ${target.y},${target.x}`
+          C${midY},${source.x}
+           ${midY},${target.x}
+           ${target.y},${target.x}`
   }
 
   // Add links with curved paths

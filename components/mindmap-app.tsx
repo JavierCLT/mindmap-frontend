@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from "react"
 import { Header } from "./header"
 import { Sidebar } from "./sidebar"
+import { LoadingSpinner } from "./loading-spinner"
 import { generateMindmapMarkdown } from "../lib/generate-mindmap"
 import { defaultMarkdown } from "../lib/default-markdown"
 import { useToast } from "../hooks/use-toast"
@@ -34,40 +35,7 @@ export const MindmapApp = () => {
     setMounted(true)
   }, [])
 
-  // Custom layout setter that preserves transform
-  const setLayoutWithTransform = (newLayout: "right" | "bi") => {
-    // Capture current transform before changing layout
-    if (mindmapRef.current) {
-      const svg = mindmapRef.current.querySelector("svg")
-      if (svg) {
-        currentTransformRef.current = d3.zoomTransform(svg as any)
-      }
-    }
-
-    // Update the layout
-    setLayout(newLayout)
-
-    // We don't need to reset the transform here since we want to preserve it
-  }
-
-  // Custom color scheme setter that preserves transform
-  const setColorSchemeWithTransform = (newScheme: "default" | "vibrant" | "summer" | "monochrome") => {
-    // Capture current transform before changing color scheme
-    if (mindmapRef.current) {
-      const svg = mindmapRef.current.querySelector("svg")
-      if (svg) {
-        // Store the current transform to apply after color change
-        currentTransformRef.current = d3.zoomTransform(svg as any)
-      }
-    }
-
-    // Update the color scheme
-    setColorScheme(newScheme)
-
-    // We don't need to reset the transform here since we want to preserve it
-  }
-
-  // Function to render the mindmap with proper centering and transform
+  // Update the renderMindmapWithTransform function to be more stable:
   const renderMindmapWithTransform = useCallback(() => {
     if (!mindmapRef.current || !mounted) return
 
@@ -78,11 +46,14 @@ export const MindmapApp = () => {
       // Get the current theme
       const currentTheme = (resolvedTheme as "dark" | "light") || "dark"
 
+      // Store the current transform before rendering
+      const preserveTransform = currentTransformRef.current
+
       // Render mindmap with preserved transform and current theme
       const { zoom, svg } = renderMindmap(mindmapRef.current, data, {
         layout,
         colorScheme,
-        preserveTransform: currentTransformRef.current,
+        preserveTransform,
         theme: currentTheme,
       })
 
@@ -90,8 +61,7 @@ export const MindmapApp = () => {
       zoomRef.current = zoom
 
       // Only update the transform if we don't already have one
-      // This prevents the mindmap from jumping around
-      if (!currentTransformRef.current && svg.node()) {
+      if (!preserveTransform && svg.node()) {
         // Use requestAnimationFrame for smoother updates
         requestAnimationFrame(() => {
           const transform = d3.zoomTransform(svg.node() as any)
@@ -107,6 +77,42 @@ export const MindmapApp = () => {
       })
     }
   }, [markdown, layout, colorScheme, resolvedTheme, mounted, toast])
+
+  // Update the setLayoutWithTransform function to be more stable:
+  const setLayoutWithTransform = useCallback(
+    (newLayout: "right" | "bi") => {
+      // Only update if the layout actually changed
+      if (layout === newLayout) return
+
+      // Capture current transform before changing layout
+      const currentTransform = currentTransformRef.current
+
+      // Update the layout
+      setLayout(newLayout)
+
+      // Ensure we preserve the transform
+      currentTransformRef.current = currentTransform
+    },
+    [layout],
+  )
+
+  // Update the setColorSchemeWithTransform function to be more stable:
+  const setColorSchemeWithTransform = useCallback(
+    (newScheme: "default" | "vibrant" | "summer" | "monochrome") => {
+      // Only update if the scheme actually changed
+      if (colorScheme === newScheme) return
+
+      // Capture current transform before changing color scheme
+      const currentTransform = currentTransformRef.current
+
+      // Update the color scheme
+      setColorScheme(newScheme)
+
+      // Ensure we preserve the transform
+      currentTransformRef.current = currentTransform
+    },
+    [colorScheme],
+  )
 
   // Initialize mindmap
   useEffect(() => {
@@ -164,6 +170,7 @@ export const MindmapApp = () => {
     renderMindmapWithTransform()
   }, [theme, resolvedTheme, mounted, renderMindmapWithTransform])
 
+  // Update the handleGenerateMindmap function to better preserve transform:
   const handleGenerateMindmap = async () => {
     if (!topic.trim()) {
       toast({
@@ -175,16 +182,20 @@ export const MindmapApp = () => {
     }
 
     setIsGenerating(true)
+
+    // Clear the current mindmap to show the loading spinner
+    if (mindmapRef.current) {
+      mindmapRef.current.innerHTML = ""
+    }
+
     try {
-      // We don't need to store the transform here since we're going to reset it
-      // for a new mindmap generation
+      // Store the current transform state if we want to preserve it
+      // For new mindmaps, we typically want to reset the transform
+      // currentTransformRef.current = null;
 
       const generatedMarkdown = await generateMindmapMarkdown(topic)
 
-      // Reset transform when generating a new mindmap
-      currentTransformRef.current = null
-
-      // Update the markdown after resetting the transform
+      // Update the markdown
       setMarkdown(generatedMarkdown)
       setIsDefaultMindmap(false) // Mark that we're no longer showing the default mindmap
 
@@ -200,6 +211,9 @@ export const MindmapApp = () => {
           error instanceof Error ? error.message : "There was an error generating your mindmap. Please try again.",
         variant: "destructive",
       })
+
+      // If there was an error, re-render the previous mindmap
+      renderMindmapWithTransform()
     } finally {
       setIsGenerating(false)
     }
@@ -770,6 +784,16 @@ export const MindmapApp = () => {
         )}
         <div className="flex-1 relative overflow-hidden">
           <div ref={mindmapRef} className="w-full h-full overflow-hidden" tabIndex={0} />
+
+          {/* Loading spinner overlay */}
+          {isGenerating && (
+            <div className="absolute inset-0 flex items-center justify-center bg-background/80 backdrop-blur-sm z-10">
+              <div className="flex flex-col items-center gap-4">
+                <LoadingSpinner size={60} />
+                <p className="text-lg font-medium text-primary">Generating your mindmap...</p>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>
