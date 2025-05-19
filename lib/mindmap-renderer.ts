@@ -147,7 +147,7 @@ export function renderMindmap(container: HTMLElement, data: MindmapNode, options
 
   // Increase horizontal spacing between levels
   // Use larger spacing on mobile for better visibility
-  const horizontalSpacing = options.isMobile ? 200 : 220 // Reduced spacing on mobile for better centering
+  const horizontalSpacing = options.isMobile ? 180 : 220 // Reduced spacing on mobile for better centering
 
   if (options.layout === "bi" && rootNode.children && rootNode.children.length > 0) {
     // Create a copy of the root node for processing
@@ -676,26 +676,35 @@ function getInitialTransform(
     // For mobile, use a smaller scale factor to ensure the entire mindmap is visible
     // and adjust based on layout
     if (layout === "right") {
-      scaleFactor = 0.75 // Smaller scale for right layout on mobile to show more content
+      scaleFactor = 0.65 // Smaller scale for right layout on mobile to show more content
     } else {
-      scaleFactor = 0.7 // Even smaller scale for bidirectional layout on mobile
+      scaleFactor = 0.6 // Even smaller scale for bidirectional layout on mobile
     }
   }
 
   const scale = Math.min(
     (scaleFactor * width) / mindmapWidth,
     (scaleFactor * height) / mindmapHeight,
-    isMobile ? 0.9 : 1.0, // Cap the maximum scale on mobile
+    isMobile ? 0.8 : 1.0, // Cap the maximum scale on mobile
   )
 
   // Calculate translation to center the mindmap in the viewport
-  // For mobile with right layout, adjust the centering to account for the root node position
+  // For mobile with right layout, we need to adjust the centering differently
   let translateX = width / 2 - centerX * scale
   const translateY = height / 2 - centerY * scale
 
-  // For mobile with right layout, shift the mindmap slightly left to better center it
+  // For right layout on mobile, we need to shift the mindmap left
+  // to account for the root node being at the left edge
   if (isMobile && layout === "right") {
-    translateX += width * 0.1 // Shift left by 10% of the viewport width
+    // Instead of shifting by a percentage, calculate the actual offset needed
+    // based on the root node position
+    const rootNode = nodes.find((n) => n.depth === 0)
+    if (rootNode) {
+      // Calculate how far from the left edge the root node is
+      const rootX = rootNode.y
+      // Adjust the translation to center the mindmap better
+      translateX = width / 2 - rootX * scale
+    }
   }
 
   return d3.zoomIdentity.translate(translateX, translateY).scale(scale)

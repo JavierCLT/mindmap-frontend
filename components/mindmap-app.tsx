@@ -132,15 +132,25 @@ export const MindmapApp = () => {
     }
   }, [markdown, layout, colorScheme, resolvedTheme, mounted, renderMindmapWithTransform])
 
+  // Update this effect in mindmap-app.tsx
   // Handle mobile view
   useEffect(() => {
     if (isMobile) {
       // On mobile, start with sidebar closed
       setIsSidebarOpen(false)
+      // Reset transform when switching to mobile to ensure proper centering
+      currentTransformRef.current = null
     } else {
       setIsSidebarOpen(true)
+      // Reset transform when switching to desktop to ensure proper centering
+      currentTransformRef.current = null
     }
-  }, [isMobile])
+
+    // Re-render the mindmap with the new transform
+    if (mounted && mindmapRef.current) {
+      renderMindmapWithTransform()
+    }
+  }, [isMobile, mounted, renderMindmapWithTransform])
 
   // Update layout when switching between mobile and desktop for default mindmap
   useEffect(() => {
