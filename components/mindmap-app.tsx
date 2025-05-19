@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useRef } from "react"
+import { useState, useEffect, useRef, useCallback } from "react"
 import { Header } from "./header"
 import { Sidebar } from "./sidebar"
 import { generateMindmapMarkdown } from "../lib/generate-mindmap"
@@ -68,7 +68,7 @@ export const MindmapApp = () => {
   }
 
   // Function to render the mindmap with proper centering and transform
-  const renderMindmapWithTransform = () => {
+  const renderMindmapWithTransform = useCallback(() => {
     if (!mindmapRef.current || !mounted) return
 
     try {
@@ -89,13 +89,15 @@ export const MindmapApp = () => {
       // Store the zoom behavior for later use
       zoomRef.current = zoom
 
-      // After rendering, capture the current transform for future renders
-      setTimeout(() => {
-        if (svg.node()) {
+      // Only update the transform if we don't already have one
+      // This prevents the mindmap from jumping around
+      if (!currentTransformRef.current && svg.node()) {
+        // Use requestAnimationFrame for smoother updates
+        requestAnimationFrame(() => {
           const transform = d3.zoomTransform(svg.node() as any)
           currentTransformRef.current = transform
-        }
-      }, 100)
+        })
+      }
     } catch (error) {
       console.error("Error rendering mindmap:", error)
       toast({
@@ -104,7 +106,7 @@ export const MindmapApp = () => {
         variant: "destructive",
       })
     }
-  }
+  }, [markdown, layout, colorScheme, resolvedTheme, mounted, toast])
 
   // Initialize mindmap
   useEffect(() => {
@@ -118,7 +120,7 @@ export const MindmapApp = () => {
         mindmapRef.current.innerHTML = ""
       }
     }
-  }, [markdown, layout, colorScheme, toast, resolvedTheme, mounted])
+  }, [markdown, layout, colorScheme, resolvedTheme, mounted, renderMindmapWithTransform])
 
   // Handle mobile view
   useEffect(() => {
@@ -152,7 +154,7 @@ export const MindmapApp = () => {
       window.removeEventListener("resize", debouncedResize)
       clearTimeout(resizeTimer)
     }
-  }, [markdown, layout, colorScheme, resolvedTheme, mounted])
+  }, [markdown, layout, colorScheme, resolvedTheme, mounted, renderMindmapWithTransform])
 
   // Handle theme change
   useEffect(() => {
@@ -160,7 +162,7 @@ export const MindmapApp = () => {
 
     // Re-render when theme changes to apply correct styles
     renderMindmapWithTransform()
-  }, [theme, resolvedTheme, mounted])
+  }, [theme, resolvedTheme, mounted, renderMindmapWithTransform])
 
   const handleGenerateMindmap = async () => {
     if (!topic.trim()) {
@@ -174,29 +176,17 @@ export const MindmapApp = () => {
 
     setIsGenerating(true)
     try {
-      // Store the current transform before generating a new mindmap
-      if (mindmapRef.current) {
-        const svg = mindmapRef.current.querySelector("svg")
-        if (svg) {
-          currentTransformRef.current = d3.zoomTransform(svg as any)
-        }
-      }
+      // We don't need to store the transform here since we're going to reset it
+      // for a new mindmap generation
 
       const generatedMarkdown = await generateMindmapMarkdown(topic)
-      setMarkdown(generatedMarkdown)
-      setIsDefaultMindmap(false) // Mark that we're no longer showing the default mindmap
 
       // Reset transform when generating a new mindmap
-      // We'll set this to null AFTER the markdown is set and the mindmap is rendered
-      // This ensures we don't lose the transform during the rendering process
-      setTimeout(() => {
-        currentTransformRef.current = null
+      currentTransformRef.current = null
 
-        // Force a re-render with the new transform
-        if (mindmapRef.current) {
-          renderMindmapWithTransform()
-        }
-      }, 100)
+      // Update the markdown after resetting the transform
+      setMarkdown(generatedMarkdown)
+      setIsDefaultMindmap(false) // Mark that we're no longer showing the default mindmap
 
       toast({
         title: "Mindmap generated",
@@ -749,6 +739,11 @@ export const MindmapApp = () => {
     handleGenerateMindmap()
   }
 
+  // Create a memoized topic setter that doesn't cause re-renders of the mindmap
+  const handleTopicChange = useCallback((newTopic: string) => {
+    setTopic(newTopic)
+  }, [])
+
   // Don't render until client-side to avoid hydration mismatch
   if (!mounted) {
     return null
@@ -761,7 +756,7 @@ export const MindmapApp = () => {
         {isSidebarOpen && (
           <Sidebar
             topic={topic}
-            setTopic={setTopic}
+            setTopic={handleTopicChange}
             onGenerate={handleGenerateMindmap}
             onExport={handleExport}
             isGenerating={isGenerating}
