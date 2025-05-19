@@ -156,6 +156,10 @@ export const MindmapApp = () => {
     const handleResize = () => {
       // Use a debounce to avoid too many re-renders
       if (mindmapRef.current) {
+        // Reset transform on resize to ensure proper centering
+        if (isDefaultMindmap) {
+          currentTransformRef.current = null
+        }
         renderMindmapWithTransform()
       }
     }
@@ -172,7 +176,7 @@ export const MindmapApp = () => {
       window.removeEventListener("resize", debouncedResize)
       clearTimeout(resizeTimer)
     }
-  }, [markdown, layout, colorScheme, resolvedTheme, mounted, renderMindmapWithTransform])
+  }, [markdown, layout, colorScheme, resolvedTheme, mounted, renderMindmapWithTransform, isDefaultMindmap])
 
   // Handle theme change
   useEffect(() => {

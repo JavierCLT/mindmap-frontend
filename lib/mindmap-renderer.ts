@@ -147,7 +147,7 @@ export function renderMindmap(container: HTMLElement, data: MindmapNode, options
 
   // Increase horizontal spacing between levels
   // Use larger spacing on mobile for better visibility
-  const horizontalSpacing = options.isMobile ? 250 : 220
+  const horizontalSpacing = options.isMobile ? 200 : 220 // Reduced spacing on mobile for better centering
 
   if (options.layout === "bi" && rootNode.children && rootNode.children.length > 0) {
     // Create a copy of the root node for processing
@@ -613,7 +613,7 @@ export function renderMindmap(container: HTMLElement, data: MindmapNode, options
     .attr("stroke-opacity", 0.8)
 
   // Calculate the initial transform to center the mindmap
-  const initialTransform = getInitialTransform(allNodes, width, height, options.isMobile)
+  const initialTransform = getInitialTransform(allNodes, width, height, options.isMobile, options.layout)
 
   // Apply transform based on options
   if (options.preserveTransform && !options.forExport) {
@@ -629,7 +629,13 @@ export function renderMindmap(container: HTMLElement, data: MindmapNode, options
 }
 
 // Improved function to get initial transform that properly centers the mindmap
-function getInitialTransform(nodes: d3.HierarchyPointNode<any>[], width: number, height: number, isMobile = false) {
+function getInitialTransform(
+  nodes: d3.HierarchyPointNode<any>[],
+  width: number,
+  height: number,
+  isMobile = false,
+  layout: "right" | "bi" = "bi",
+) {
   if (nodes.length === 0) return d3.zoomIdentity
 
   // Calculate bounds
@@ -663,18 +669,34 @@ function getInitialTransform(nodes: d3.HierarchyPointNode<any>[], width: number,
   const mindmapHeight = bottom - top
 
   // Calculate scale to fit the entire mindmap with some padding
-  // Use a larger scale factor on mobile for better visibility
-  const scaleFactor = isMobile ? 0.9 : 0.8
+  // Use a different scale factor for mobile based on layout
+  let scaleFactor = 0.8
+
+  if (isMobile) {
+    // For mobile, use a smaller scale factor to ensure the entire mindmap is visible
+    // and adjust based on layout
+    if (layout === "right") {
+      scaleFactor = 0.75 // Smaller scale for right layout on mobile to show more content
+    } else {
+      scaleFactor = 0.7 // Even smaller scale for bidirectional layout on mobile
+    }
+  }
+
   const scale = Math.min(
     (scaleFactor * width) / mindmapWidth,
     (scaleFactor * height) / mindmapHeight,
-    isMobile ? 1.2 : 1.0,
+    isMobile ? 0.9 : 1.0, // Cap the maximum scale on mobile
   )
 
   // Calculate translation to center the mindmap in the viewport
-  // For d3.zoomIdentity.translate, we need to calculate where the center of the viewport should be
-  const translateX = width / 2 - centerX * scale
+  // For mobile with right layout, adjust the centering to account for the root node position
+  let translateX = width / 2 - centerX * scale
   const translateY = height / 2 - centerY * scale
+
+  // For mobile with right layout, shift the mindmap slightly left to better center it
+  if (isMobile && layout === "right") {
+    translateX += width * 0.1 // Shift left by 10% of the viewport width
+  }
 
   return d3.zoomIdentity.translate(translateX, translateY).scale(scale)
 }

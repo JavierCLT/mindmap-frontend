@@ -17,7 +17,7 @@ export function MobileInput({ topic, setTopic, onGenerate, isGenerating }: Mobil
         <Input
           value={topic}
           onChange={(e) => setTopic(e.target.value)}
-          placeholder="Enter a topic..."
+          placeholder="Enter a topic... e.g., personal finance"
           className="flex-1"
         />
         <Button
