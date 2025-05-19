@@ -38,7 +38,7 @@ export function MobileInput({ topic, setTopic, onGenerate, isGenerating }: Mobil
             value={topic}
             onChange={handleInputChange}
             placeholder="Enter a topic... e.g., personal finance"
-            className="w-full"
+            className="w-full text-sm"
             maxLength={MAX_CHARS}
           />
         </div>

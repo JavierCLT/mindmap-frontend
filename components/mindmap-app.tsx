@@ -554,7 +554,7 @@ export const MindmapApp = () => {
               } else {
                 // If the mindmap is taller than the container
                 viewBoxHeight = bbox.height * 1.1; // Add 10% padding
-                viewBoxWidth = viewBoxHeight * containerRatio;
+                viewBoxWidth = viewBoxHeight / containerRatio;
               }
               
               const viewBoxX = bbox.x - (viewBoxWidth - bbox.width) / 2;
@@ -822,10 +822,54 @@ export const MindmapApp = () => {
   }
 
   const handleExampleTopic = (exampleTopic: string) => {
+    // First set the topic
     setTopic(exampleTopic)
-    // Reset transform when generating a new example
+
+    // Reset transform for new mindmaps
     currentTransformRef.current = null
-    handleGenerateMindmap()
+
+    // Use setTimeout to ensure the topic state is updated before generating
+    setTimeout(() => {
+      // Create a new function that doesn't depend on the topic state
+      setIsGenerating(true)
+
+      // Close sidebar on mobile after generating
+      if (isMobile) {
+        setIsSidebarOpen(false)
+      }
+
+      // Clear the current mindmap to show the loading spinner
+      if (mindmapRef.current) {
+        mindmapRef.current.innerHTML = ""
+      }
+
+      generateMindmapMarkdown(exampleTopic)
+        .then((generatedMarkdown) => {
+          // Update the markdown
+          setMarkdown(generatedMarkdown)
+          setIsDefaultMindmap(false) // Mark that we're no longer showing the default mindmap
+
+          toast({
+            title: "Mindmap generated",
+            description: `Mindmap for "${exampleTopic}" has been created`,
+          })
+        })
+        .catch((error) => {
+          console.error("Error generating mindmap:", error)
+          toast({
+            title: "Error generating mindmap",
+            description:
+              error instanceof Error ? error.message : "There was an error generating your mindmap. Please try again.",
+            variant: "destructive",
+          })
+
+          // If there was an error, re-render the previous mindmap
+          renderMindmapWithTransform()
+        })
+        .finally(() => {
+          setIsGenerating(false)
+        })
+    }, 0)
   }
 
   // Create a memoized topic setter that doesn't cause re-renders of the mindmap
