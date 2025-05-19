@@ -18,7 +18,8 @@ export const MindmapApp = () => {
   const [markdown, setMarkdown] = useState(defaultMarkdown) // Initialize with default markdown
   const [topic, setTopic] = useState("")
   const [isGenerating, setIsGenerating] = useState(false)
-  const [layout, setLayout] = useState<"right" | "bi">("bi") // Default to bidirectional
+  const isMobileCheck = useMobile()
+  const [layout, setLayout] = useState<"right" | "bi">(isMobileCheck ? "right" : "bi") // Default to right on mobile
   const [colorScheme, setColorScheme] = useState<"default" | "vibrant" | "summer" | "monochrome">("default")
   const [isSidebarOpen, setIsSidebarOpen] = useState(true)
   const [isSettingsOpen, setIsSettingsOpen] = useState(false)
@@ -140,6 +141,13 @@ export const MindmapApp = () => {
       setIsSidebarOpen(true)
     }
   }, [isMobile])
+
+  // Update layout when switching between mobile and desktop for default mindmap
+  useEffect(() => {
+    if (isDefaultMindmap) {
+      setLayout(isMobile ? "right" : "bi")
+    }
+  }, [isMobile, isDefaultMindmap])
 
   // Handle window resize
   useEffect(() => {
