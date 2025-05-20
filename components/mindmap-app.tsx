@@ -275,15 +275,15 @@ export const MindmapApp = () => {
       setIsDefaultMindmap(false) // Mark that we're no longer showing the default mindmap
 
       toast({
-        title: "Mindmap generated",
-        description: `Mindmap for "${topic}" has been created`,
+        title: "Mind map generated",
+        description: `Mind map for "${topic}" has been created`,
       })
     } catch (error) {
       console.error("Error generating mindmap:", error)
       toast({
-        title: "Error generating mindmap",
+        title: "Error generating mind map",
         description:
-          error instanceof Error ? error.message : "There was an error generating your mindmap. Please try again.",
+          error instanceof Error ? error.message : "There was an error generating your mind map. Please try again.",
         variant: "destructive",
       })
 
@@ -850,16 +850,16 @@ export const MindmapApp = () => {
           setIsDefaultMindmap(false) // Mark that we're no longer showing the default mindmap
 
           toast({
-            title: "Mindmap generated",
-            description: `Mindmap for "${exampleTopic}" has been created`,
+            title: "Mind map generated",
+            description: `Mind map for "${exampleTopic}" has been created`,
           })
         })
         .catch((error) => {
           console.error("Error generating mindmap:", error)
           toast({
-            title: "Error generating mindmap",
+            title: "Error generating mind map",
             description:
-              error instanceof Error ? error.message : "There was an error generating your mindmap. Please try again.",
+              error instanceof Error ? error.message : "There was an error generating your mind map. Please try again.",
             variant: "destructive",
           })
 
@@ -916,7 +916,7 @@ export const MindmapApp = () => {
             <div className="absolute inset-0 flex items-center justify-center bg-background/80 backdrop-blur-sm z-10">
               <div className="flex flex-col items-center gap-4">
                 <LoadingSpinner size={60} />
-                <p className="text-lg font-medium text-primary">Generating your mindmap...</p>
+                <p className="text-lg font-medium text-primary">Generating your mind map...</p>
               </div>
             </div>
           )}

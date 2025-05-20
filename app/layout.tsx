@@ -8,23 +8,23 @@ import Script from "next/script"
 const inter = Inter({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
-  title: "Mindmap Maker - AI-Powered Mind Mapping Tool",
+  title: "Mind Map Maker - AI-Powered Mind Mapping Tool",
   description:
-    "Create beautiful, organized mindmaps instantly with our AI-powered tool. Visualize concepts, brainstorm ideas, and export your mindmaps in multiple formats.",
-  keywords: ["mindmap", "mind mapping", "AI", "visualization", "brainstorming", "organization", "ideas"],
-  authors: [{ name: "Mindmap Maker Team" }],
+    "Create beautiful, organized mind maps instantly with our AI-powered tool. Visualize concepts, brainstorm ideas, and export your mind maps in multiple formats.",
+  keywords: ["mind map", "mind mapping", "AI", "visualization", "brainstorming", "organization", "ideas"],
+  authors: [{ name: "Mind Map Maker Team" }],
   metadataBase: new URL("https://mind-map-maker.com"),
   openGraph: {
-    title: "Mindmap Maker - AI-Powered Mind Mapping Tool",
-    description: "Create beautiful, organized mindmaps instantly with our AI-powered tool.",
+    title: "Mind Map Maker - AI-Powered Mind Mapping Tool",
+    description: "Create beautiful, organized mind maps instantly with our AI-powered tool.",
     url: "https://mind-map-maker.com",
     siteName: "Mind Map Maker",
     type: "website",
   },
   twitter: {
     card: "summary_large_image",
-    title: "Mindmap Maker - AI-Powered Mind Mapping Tool",
-    description: "Create beautiful, organized mindmaps instantly with our AI-powered tool.",
+    title: "Mind Map Maker - AI-Powered Mind Mapping Tool",
+    description: "Create beautiful, organized mind maps instantly with our AI-powered tool.",
   },
   alternates: {
     canonical: "https://mind-map-maker.com",

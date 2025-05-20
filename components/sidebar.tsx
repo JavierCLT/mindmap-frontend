@@ -69,7 +69,7 @@ export function Sidebar({
     <div className="w-80 border-r border-border bg-card p-4 overflow-y-auto">
       <Card className="mb-4">
         <CardHeader className="pb-2">
-          <CardTitle className="text-sm">Generate a Mindmap</CardTitle>
+          <CardTitle className="text-sm">Generate a Mind Map</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-2">
@@ -93,7 +93,7 @@ export function Sidebar({
             onClick={onGenerate}
             disabled={isGenerating || charCount === 0 || charCount > MAX_CHARS}
           >
-            {isGenerating ? "Generating..." : "Generate Mindmap"}
+            {isGenerating ? "Generating..." : "Generate Mind Map"}
           </Button>
 
           <div className="space-y-2">

@@ -23,7 +23,7 @@ export function Header({ toggleSidebar, isSidebarOpen }: HeaderProps) {
         </Button>
         <div className="flex items-center">
           <Network className="mr-2 h-5 w-5 text-primary" />
-          <h1 className="text-xl font-semibold">Mindmap Maker</h1>
+          <h1 className="text-xl font-semibold">Mind Map Maker</h1>
         </div>
         <div className="ml-auto flex items-center gap-2">
           <Button variant="ghost" size="icon" onClick={() => setIsInfoModalOpen(true)}>

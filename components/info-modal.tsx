@@ -14,23 +14,23 @@ export function InfoModal({ isOpen, onClose }: InfoModalProps) {
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>About Mindmap Maker</DialogTitle>
-          <DialogDescription>An AI-powered mindmap application to visualize and organize ideas.</DialogDescription>
+          <DialogTitle>About Mind Map Maker</DialogTitle>
+          <DialogDescription>An AI-powered mind map application to visualize and organize ideas.</DialogDescription>
         </DialogHeader>
         <div className="space-y-4">
           <div>
             <h3 className="font-medium">How to use:</h3>
             <ul className="list-disc pl-5 text-sm">
-              <li>Enter a topic in the sidebar and click "Generate Mindmap"</li>
+              <li>Enter a topic in the sidebar and click "Generate Mind Map"</li>
               <li>Choose from example topics for quick generation</li>
               <li>Select different layouts and color schemes</li>
-              <li>Export your mindmap as PNG or interactive HTML</li>
+              <li>Export your mind map as PNG or interactive HTML</li>
             </ul>
           </div>
           <div>
             <h3 className="font-medium">Features:</h3>
             <ul className="list-disc pl-5 text-sm">
-              <li>AI-powered mindmap generation. It can make mistakes</li>
+              <li>AI-powered mind map generation. It can make mistakes</li>
               <li>Multiple layout options</li>
               <li>Customizable color schemes</li>
               <li>Interactive visualization</li>
