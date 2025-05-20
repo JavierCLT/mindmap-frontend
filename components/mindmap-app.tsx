@@ -883,7 +883,7 @@ export const MindmapApp = () => {
   }
 
   return (
-    <div className="flex flex-col h-screen">
+    <div className="flex flex-col h-screen md:h-screen mobile-container md:static">
       <Header toggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)} isSidebarOpen={isSidebarOpen} />
       <div className="flex flex-1 overflow-hidden">
         {isSidebarOpen && (
@@ -905,7 +905,11 @@ export const MindmapApp = () => {
         )}
         <div className="flex-1 relative overflow-hidden">
           {/* Add padding-bottom on mobile to make room for the fixed input */}
-          <div ref={mindmapRef} className="w-full h-full overflow-hidden md:pb-0 pb-16" tabIndex={0} />
+          <div
+            ref={mindmapRef}
+            className="w-full h-full overflow-hidden md:pb-0 pb-16 max-h-[calc(100vh-14rem)]"
+            tabIndex={0}
+          />
 
           {/* Loading spinner overlay */}
           {isGenerating && (

@@ -89,7 +89,7 @@ export async function generateMindmapMarkdown(topic: string): Promise<string> {
 
     return data.markdown
   } catch (error) {
-    console.error("Error generating mindmap:", error)
+    console.error("Error generating mind map:", error)
     throw error
   }
 }

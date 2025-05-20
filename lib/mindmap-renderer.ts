@@ -140,6 +140,27 @@ export function renderMindmap(container: HTMLElement, data: MindmapNode, options
   // Create hierarchical layout
   const rootNode = d3.hierarchy(data)
 
+  // Determine the maximum depth in the tree
+  let maxDepth = 0
+  rootNode.each((node) => {
+    if (node.depth > maxDepth) maxDepth = node.depth
+  })
+
+  // Function to check if a node has depth 4 descendants
+  function hasDepth4Descendants(node: d3.HierarchyNode<MindmapNode>): boolean {
+    if (!node.children) return false
+
+    // Check if any direct children are at depth 4
+    if (node.children.some((child) => child.depth === 4)) return true
+
+    // Recursively check children (but only if they're not already at depth 4)
+    return node.children.some((child) => child.depth < 4 && hasDepth4Descendants(child))
+  }
+
+  // Determine the cutoff depth for rectangles vs circles
+  // If max depth is 3 or less, depth 0-2 get rectangles, depth 3+ get circles
+  const baseRectangleCutoffDepth = maxDepth >= 4 ? 2 : 2
+
   // Split data for bidirectional layout
   let leftNodes: d3.HierarchyPointNode<MindmapNode>[] = []
   let rightNodes: d3.HierarchyPointNode<MindmapNode>[] = []
@@ -167,9 +188,9 @@ export function renderMindmap(container: HTMLElement, data: MindmapNode, options
       .tree<MindmapNode>()
       .nodeSize([options.isMobile ? 50 : 35, horizontalSpacing]) // Increased vertical spacing on mobile
       .separation((a, b) => {
-        // Check if either node has children at depth 3+
-        const aHasDeepChildren = a.children?.some((child) => child.depth >= 3) || false
-        const bHasDeepChildren = b.children?.some((child) => child.depth >= 3) || false
+        // Check if either node has children at depth beyond the cutoff
+        const aHasDeepChildren = a.children?.some((child) => child.depth > baseRectangleCutoffDepth) || false
+        const bHasDeepChildren = b.children?.some((child) => child.depth > baseRectangleCutoffDepth) || false
 
         // Adjust separation based on depth and whether nodes have children
         if (a.depth === 2 || b.depth === 2) {
@@ -180,7 +201,14 @@ export function renderMindmap(container: HTMLElement, data: MindmapNode, options
           // Use standard spacing for depth 2 nodes without children
           return a.parent === b.parent ? (options.isMobile ? 2.0 : 1.5) : options.isMobile ? 2.3 : 1.8
         }
-        if (a.depth >= 3 || b.depth >= 3) {
+        if (a.depth === 3 || b.depth === 3) {
+          // Similar spacing for depth 3 nodes as we use for depth 2
+          if (aHasDeepChildren || bHasDeepChildren) {
+            return a.parent === b.parent ? (options.isMobile ? 2.5 : 2.0) : options.isMobile ? 2.8 : 2.3
+          }
+          return a.parent === b.parent ? (options.isMobile ? 1.8 : 1.3) : options.isMobile ? 2.0 : 1.6
+        }
+        if (a.depth > baseRectangleCutoffDepth || b.depth > baseRectangleCutoffDepth) {
           return a.parent === b.parent ? (options.isMobile ? 1.5 : 1.0) : options.isMobile ? 1.7 : 1.2
         }
         // Default separation for other nodes
@@ -225,9 +253,9 @@ export function renderMindmap(container: HTMLElement, data: MindmapNode, options
       .tree<MindmapNode>()
       .nodeSize([options.isMobile ? 50 : 35, horizontalSpacing]) // Increased vertical spacing on mobile
       .separation((a, b) => {
-        // Check if either node has children at depth 3+
-        const aHasDeepChildren = a.children?.some((child) => child.depth >= 3) || false
-        const bHasDeepChildren = b.children?.some((child) => child.depth >= 3) || false
+        // Check if either node has children at depth beyond the cutoff
+        const aHasDeepChildren = a.children?.some((child) => child.depth > baseRectangleCutoffDepth) || false
+        const bHasDeepChildren = b.children?.some((child) => child.depth > baseRectangleCutoffDepth) || false
 
         // Adjust separation based on depth and whether nodes have children
         if (a.depth === 2 || b.depth === 2) {
@@ -236,13 +264,20 @@ export function renderMindmap(container: HTMLElement, data: MindmapNode, options
             return a.parent === b.parent ? (options.isMobile ? 2.8 : 2.2) : options.isMobile ? 3.0 : 2.5
           }
           // Use standard spacing for depth 2 nodes without children
-          return a.parent === b.parent ? (options.isMobile ? 2.0 : 1.5) : options.isMobile ? 2.3 : 1.8
+          return a.parent === b.parent ? (options.isMobile ? 2.0 : 1.5) : options.iMobile ? 2.3 : 1.8
         }
-        if (a.depth >= 3 || b.depth >= 3) {
-          return a.parent === b.parent ? (options.isMobile ? 1.5 : 1.0) : options.isMobile ? 1.7 : 1.2
+        if (a.depth === 3 || b.depth === 3) {
+          // Similar spacing for depth 3 nodes as we use for depth 2
+          if (aHasDeepChildren || bHasDeepChildren) {
+            return a.parent === b.parent ? (options.isMobile ? 2.5 : 2.0) : options.iMobile ? 2.8 : 2.3
+          }
+          return a.parent === b.parent ? (options.isMobile ? 1.8 : 1.3) : options.iMobile ? 2.0 : 1.6
+        }
+        if (a.depth > baseRectangleCutoffDepth || b.depth > baseRectangleCutoffDepth) {
+          return a.parent === b.parent ? (options.isMobile ? 1.5 : 1.0) : options.iMobile ? 1.7 : 1.2
         }
         // Default separation for other nodes
-        return a.parent === b.parent ? (options.isMobile ? 1.8 : 1.2) : options.isMobile ? 2.0 : 1.5
+        return a.parent === b.parent ? (options.isMobile ? 1.8 : 1.2) : options.iMobile ? 2.0 : 1.5
       })
 
     rootNodeProcessed = treeLayout(rootNode)
@@ -399,11 +434,33 @@ export function renderMindmap(container: HTMLElement, data: MindmapNode, options
       }
       return options.isMobile ? 160 : 120 // Standard width for depth 2 nodes with children
     },
+    depth3Branch: (d: d3.HierarchyPointNode<MindmapNode>) => {
+      // Allow longer text for depth 3 nodes that don't have children
+      if (d.depth === 3 && (!d.children || d.children.length === 0)) {
+        return options.isMobile ? 180 : 140 // Wider boxes for childless depth 3 nodes
+      }
+      return options.isMobile ? 140 : 100 // Standard width for depth 3 nodes with children
+    },
   }
 
-  // Add background rectangles for title, main branches, and second level branches (depth 0, 1, 2)
+  // Function to determine if a node should have a rectangle
+  function shouldHaveRectangle(d: d3.HierarchyPointNode<MindmapNode>): boolean {
+    // Depth 0-2 always get rectangles
+    if (d.depth <= 2) return true
+
+    // Depth 3 nodes get rectangles only if they have depth 4 descendants
+    if (d.depth === 3) {
+      // Check if this node has any depth 4 children
+      return d.children?.some((child) => child.depth === 4) || false
+    }
+
+    // Depth 4+ never get rectangles
+    return false
+  }
+
+  // Add background rectangles for nodes that should have them
   const nodeRects = nodes
-    .filter((d) => d.depth <= 2) // Include root, first level, and second level
+    .filter((d) => shouldHaveRectangle(d))
     .append("rect")
     .attr("class", "mindmap-node-bg")
     .attr("rx", 5) // Rounded corners
@@ -411,10 +468,9 @@ export function renderMindmap(container: HTMLElement, data: MindmapNode, options
     .attr("fill", (d) => getNodeColor(d))
     .attr("opacity", 1.0) // Solid color
 
-  // Add connection circles at node joints (like in the markmap UI)
-  // Only add for third level and beyond (depth > 2)
+  // Add connection circles at node joints for nodes that shouldn't have rectangles
   nodes
-    .filter((d) => d.depth > 2)
+    .filter((d) => !shouldHaveRectangle(d))
     .append("circle")
     .attr("class", "mindmap-node-circle")
     .attr("r", options.isMobile ? 5 : 4) // Slightly larger circles on mobile
@@ -430,19 +486,19 @@ export function renderMindmap(container: HTMLElement, data: MindmapNode, options
     .attr("dy", "0.3em")
     .attr("x", (d) => {
       // Level-specific horizontal positioning
-      if (d.depth <= 2) return 0 // Center text for all boxed nodes (depth 0, 1, 2)
-      return d.y < 0 ? -10 : 10 // Third level and beyond to the right/left of the dot
+      if (shouldHaveRectangle(d)) return 0 // Center text for all boxed nodes
+      return d.y < 0 ? -10 : 10 // For circle nodes: to the right/left of the dot
     })
     .attr("text-anchor", (d) => {
       // Level-specific text alignment
-      if (d.depth <= 2) return "middle" // Center text for all boxed nodes (depth 0, 1, 2)
+      if (shouldHaveRectangle(d)) return "middle" // Center text for all boxed nodes
       return d.y < 0 ? "end" : "start" // Left side: right-aligned, Right side: left-aligned
     })
     .text((d) => d.data.name)
     // Update the text color logic to ensure good contrast with the new color palettes
     .attr("fill", (d) => {
       // For boxed nodes, determine text color based on background color
-      if (d.depth <= 2) {
+      if (shouldHaveRectangle(d)) {
         const nodeColor = getNodeColor(d)
 
         // For summer colors, use dark grey text for yellow to improve contrast
@@ -485,7 +541,7 @@ export function renderMindmap(container: HTMLElement, data: MindmapNode, options
 
   // Apply text wrapping based on depth
   nodeTexts
-    .filter((d) => d.depth <= 2)
+    .filter((d) => shouldHaveRectangle(d))
     .each(function (d) {
       const textElement = d3.select(this)
       let maxWidth
@@ -493,7 +549,9 @@ export function renderMindmap(container: HTMLElement, data: MindmapNode, options
       // Adjust max width based on depth
       if (d.depth === 0) maxWidth = maxWidths.title
       else if (d.depth === 1) maxWidth = maxWidths.mainBranch
-      else maxWidth = typeof maxWidths.subBranch === "function" ? maxWidths.subBranch(d) : maxWidths.subBranch
+      else if (d.depth === 2)
+        maxWidth = typeof maxWidths.subBranch === "function" ? maxWidths.subBranch(d) : maxWidths.subBranch
+      else maxWidth = typeof maxWidths.depth3Branch === "function" ? maxWidths.depth3Branch(d) : maxWidths.depth3Branch
 
       // Apply text wrapping
       wrapText(textElement, maxWidth)
@@ -532,9 +590,13 @@ export function renderMindmap(container: HTMLElement, data: MindmapNode, options
               ? options.isMobile
                 ? 20
                 : 15
-              : options.isMobile
-                ? 14
-                : 10,
+              : d.depth === 2
+                ? options.isMobile
+                  ? 14
+                  : 10
+                : options.isMobile
+                  ? 12
+                  : 8,
         vertical:
           d.depth === 0
             ? options.isMobile
@@ -544,9 +606,13 @@ export function renderMindmap(container: HTMLElement, data: MindmapNode, options
               ? options.isMobile
                 ? 10
                 : 8
-              : options.isMobile
-                ? 8
-                : 6,
+              : d.depth === 2
+                ? options.isMobile
+                  ? 8
+                  : 6
+                : options.isMobile
+                  ? 6
+                  : 4,
       }
 
       // Calculate dimensions
@@ -573,8 +639,8 @@ export function renderMindmap(container: HTMLElement, data: MindmapNode, options
     const source = { x: d.source.x, y: d.source.y }
     const target = { x: d.target.x, y: d.target.y }
 
-    // Adjust target coordinates for boxed nodes (depth 1 and 2)
-    if (d.target.depth <= 2) {
+    // Adjust target coordinates for boxed nodes
+    if (shouldHaveRectangle(d.target)) {
       const dimensions = nodeDimensions.get(d.target.data.id)
 
       if (dimensions) {
@@ -589,8 +655,7 @@ export function renderMindmap(container: HTMLElement, data: MindmapNode, options
     }
 
     // Calculate control points for a smooth curve with longer horizontal sections
-    // Adjust the bend point based on whether the target is a depth 3 node
-    const bendPoint = d.target.depth >= 3 ? 0.8 : 0.75
+    const bendPoint = shouldHaveRectangle(d.target) ? 0.75 : 0.8
     const midY = source.y + (target.y - source.y) * bendPoint
 
     return `M${source.y},${source.x}
@@ -638,6 +703,21 @@ function getInitialTransform(
 ) {
   if (nodes.length === 0) return d3.zoomIdentity
 
+  // Function to determine if a node should have a rectangle
+  function shouldHaveRectangle(d: d3.HierarchyPointNode<any>): boolean {
+    // Depth 0-2 always get rectangles
+    if (d.depth <= 2) return true
+
+    // Depth 3 nodes get rectangles only if they have depth 4 descendants
+    if (d.depth === 3) {
+      // Check if this node has any depth 4 children
+      return d.children?.some((child) => child.depth === 4) || false
+    }
+
+    // Depth 4+ never get rectangles
+    return false
+  }
+
   // Calculate bounds
   let left = Number.POSITIVE_INFINITY
   let right = Number.NEGATIVE_INFINITY
@@ -648,7 +728,7 @@ function getInitialTransform(
     // For each node, consider both its position and any potential text/rectangle
     // Add a larger buffer to account for node size and ensure proper centering
     // Use even larger buffer on mobile for better visibility
-    const buffer = d.depth <= 2 ? (isMobile ? 180 : 150) : isMobile ? 70 : 50
+    const buffer = shouldHaveRectangle(d) ? (isMobile ? 180 : 150) : isMobile ? 70 : 50
 
     // Note: In d3.tree, x is vertical and y is horizontal
     const x = d.x // Vertical position
