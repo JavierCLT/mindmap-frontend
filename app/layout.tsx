@@ -44,7 +44,7 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
-        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
         <link rel="icon" href="/network-icon-black-bg.png" type="image/png" />
         <link rel="apple-touch-icon" href="/network-icon-black-bg.png" />
         <link rel="manifest" href="/manifest.json" />

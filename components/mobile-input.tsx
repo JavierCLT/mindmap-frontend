@@ -38,8 +38,9 @@ export function MobileInput({ topic, setTopic, onGenerate, isGenerating }: Mobil
             value={topic}
             onChange={handleInputChange}
             placeholder="Enter a topic... e.g., how to budget"
-            className="w-full text-sm"
+            className="w-full text-base" // Changed from text-sm to text-base for better readability
             maxLength={MAX_CHARS}
+            style={{ fontSize: "16px" }} // Add explicit font size to prevent zoom
           />
         </div>
         <Button

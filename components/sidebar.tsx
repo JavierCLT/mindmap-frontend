@@ -83,6 +83,7 @@ export function Sidebar({
                 onChange={handleInputChange}
                 placeholder="e.g., how to budget"
                 maxLength={MAX_CHARS}
+                style={{ fontSize: "16px" }} // Add explicit font size to prevent zoom
               />
             </div>
           </div>
