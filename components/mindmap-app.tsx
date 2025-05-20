@@ -39,6 +39,12 @@ export const MindmapApp = () => {
     setMounted(true)
   }, [])
 
+  // Handle toggle sidebar function
+  const handleToggleSidebar = useCallback(() => {
+    console.log("Toggle sidebar called, current state:", isSidebarOpen)
+    setIsSidebarOpen((prev) => !prev)
+  }, [isSidebarOpen])
+
   // Update the renderMindmapWithTransform function to be more stable:
   const renderMindmapWithTransform = useCallback(() => {
     if (!mindmapRef.current || !mounted) return
@@ -137,12 +143,17 @@ export const MindmapApp = () => {
   // Handle mobile view
   useEffect(() => {
     if (isMobile) {
-      // On mobile, start with sidebar closed
-      setIsSidebarOpen(false)
+      // On mobile, only set sidebar closed on initial load, not on every render
+      if (!mounted) {
+        setIsSidebarOpen(false)
+      }
       // Reset transform when switching to mobile to ensure proper centering
       currentTransformRef.current = null
     } else {
-      setIsSidebarOpen(true)
+      // On desktop, only set sidebar open on initial load or when switching from mobile
+      if (!mounted) {
+        setIsSidebarOpen(true)
+      }
       // Reset transform when switching to desktop to ensure proper centering
       currentTransformRef.current = null
     }
@@ -883,31 +894,32 @@ export const MindmapApp = () => {
   }
 
   return (
-    <div className="flex flex-col h-screen md:h-screen mobile-container md:static">
-      <Header toggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)} isSidebarOpen={isSidebarOpen} />
-      <div className="flex flex-1 overflow-hidden">
-        {isSidebarOpen && (
-          <div ref={sidebarRef} className="z-30 md:z-auto">
-            <Sidebar
-              topic={topic}
-              setTopic={handleTopicChange}
-              onGenerate={handleGenerateMindmap}
-              onExport={handleExport}
-              isGenerating={isGenerating}
-              onExampleTopic={handleExampleTopic}
-              isSettingsOpen={isSettingsOpen}
-              layout={layout}
-              setLayout={setLayoutWithTransform}
-              colorScheme={colorScheme}
-              setColorScheme={setColorSchemeWithTransform}
-            />
-          </div>
-        )}
+    <div className="flex flex-col h-screen md:h-screen mobile-container md:static flex-grow">
+      <Header toggleSidebar={handleToggleSidebar} isSidebarOpen={isSidebarOpen} />
+      <div className="flex flex-1 overflow-hidden h-[calc(100vh-3.5rem)]">
+        <div
+          ref={sidebarRef}
+          className={`z-30 md:z-auto transition-all duration-300 ${isSidebarOpen ? "w-80" : "w-0 overflow-hidden"}`}
+        >
+          <Sidebar
+            topic={topic}
+            setTopic={handleTopicChange}
+            onGenerate={handleGenerateMindmap}
+            onExport={handleExport}
+            isGenerating={isGenerating}
+            onExampleTopic={handleExampleTopic}
+            isSettingsOpen={isSettingsOpen}
+            layout={layout}
+            setLayout={setLayoutWithTransform}
+            colorScheme={colorScheme}
+            setColorScheme={setColorSchemeWithTransform}
+          />
+        </div>
         <div className="flex-1 relative overflow-hidden">
           {/* Add padding-bottom on mobile to make room for the fixed input */}
           <div
             ref={mindmapRef}
-            className="w-full h-full overflow-hidden md:pb-0 pb-16 max-h-[calc(100vh-14rem)]"
+            className="w-full h-full overflow-hidden md:pb-0 pb-16 border-b border-primary/30 dark:border-primary/40"
             tabIndex={0}
           />
 

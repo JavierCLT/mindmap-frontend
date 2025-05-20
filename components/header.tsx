@@ -17,8 +17,16 @@ export function Header({ toggleSidebar, isSidebarOpen }: HeaderProps) {
   return (
     <header className="border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="flex h-14 items-center px-4">
-        <Button variant="ghost" size="icon" onClick={toggleSidebar} className="mr-2" data-sidebar-trigger="true">
-          <Menu className="h-5 w-5" />
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={toggleSidebar}
+          className="mr-2 relative"
+          data-sidebar-trigger="true"
+          aria-label="Toggle sidebar"
+          aria-expanded={isSidebarOpen}
+        >
+          <Menu className={`h-5 w-5 transition-transform ${isSidebarOpen ? "" : "rotate-90"}`} />
           <span className="sr-only">Toggle sidebar</span>
         </Button>
         <div className="flex items-center">
