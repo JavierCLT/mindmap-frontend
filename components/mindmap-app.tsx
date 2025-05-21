@@ -1,479 +1,229 @@
 "use client"
 
-import { useState, useEffect, useRef, useCallback, useMemo } from "react"
-import * as d3 from "d3"
+import { useState, useEffect, useRef, useCallback } from "react"
+import { Header } from "./header"
+import { Sidebar } from "./sidebar"
+import { LoadingSpinner } from "./loading-spinner"
+import { MobileInput } from "./mobile-input"
+import { generateMindmapMarkdown } from "../lib/generate-mindmap"
+import { defaultMarkdown } from "../lib/default-markdown"
+import { useToast } from "../hooks/use-toast"
+import { useMobile } from "../hooks/use-mobile"
+import { renderMindmap } from "../lib/mindmap-renderer"
+import { parseMarkdown } from "../lib/markdown-parser"
 import { useTheme } from "next-themes"
-import sanitizeHtml from "sanitize-html"
+import * as d3 from "d3"
 
-// Mock default markdown
-const defaultMarkdown = `
-# Mind Map
-## Branch 1
-### Sub-branch 1.1
-### Sub-branch 1.2
-## Branch 2
-### Sub-branch 2.1
-### Sub-branch 2.2
-`
+export const MindmapApp = () => {
+  const [markdown, setMarkdown] = useState(defaultMarkdown) // Initialize with default markdown
+  const [topic, setTopic] = useState("")
+  const [isGenerating, setIsGenerating] = useState(false)
+  const isMobileCheck = useMobile()
+  const [layout, setLayout] = useState<"right" | "bi">(isMobileCheck ? "right" : "bi") // Default to right on mobile
+  const [colorScheme, setColorScheme] = useState<"default" | "vibrant" | "summer" | "monochrome">("default")
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true)
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false)
+  const [mounted, setMounted] = useState(false)
+  const [isDefaultMindmap, setIsDefaultMindmap] = useState(true) // Track if we're showing the default mindmap
+  const mindmapRef = useRef<HTMLDivElement>(null)
+  const sidebarRef = useRef<HTMLDivElement>(null)
+  const { toast } = useToast()
+  const isMobile = useMobile()
+  const { theme, resolvedTheme, setTheme } = useTheme()
+  const currentTransformRef = useRef<any>(null)
+  const zoomRef = useRef<any>(null)
+  const lastThemeRef = useRef<string | undefined>(undefined) // Track the last theme to detect changes
 
-// Mock parseMarkdown
-interface MindmapNode {
-  id: string
-  label: string
-  children: MindmapNode[]
-  depth: number
-}
-
-const parseMarkdown = (markdown: string): MindmapNode => {
-  const lines = markdown.split("\n").filter((line) => line.trim())
-  const root: MindmapNode = { id: "root", label: "", children: [], depth: 0 }
-  const stack: MindmapNode[] = [root]
-  let lastDepth = 0
-
-  for (const line of lines) {
-    const depth = line.match(/^#+/)?.[0].length || 0
-    const label = sanitizeHtml(line.replace(/^#+/, "").trim(), { allowedTags: [] })
-    const node: MindmapNode = { id: `${label}-${depth}`, label, children: [], depth }
-
-    if (depth > lastDepth) {
-      stack[stack.length - 1].children.push(node)
-      stack.push(node)
-    } else if (depth === lastDepth) {
-      stack.pop()
-      stack[stack.length - 1].children.push(node)
-      stack.push(node)
-    } else {
-      while (stack.length > depth) stack.pop()
-      stack[stack.length - 1].children.push(node)
-      stack.push(node)
-    }
-    lastDepth = depth
-  }
-
-  root.label = root.children[0]?.label || "Root"
-  root.children = root.children[0]?.children || []
-  return root
-}
-
-// Mock generateMindmapMarkdown
-const generateMindmapMarkdown = async (topic: string): Promise<string> => {
-  // Simulate async API call
-  await new Promise((resolve) => setTimeout(resolve, 1000))
-  return `
-# ${sanitizeHtml(topic)}
-## ${sanitizeHtml(topic)} Concept 1
-### Sub-concept 1.1
-### Sub-concept 1.2
-## ${sanitizeHtml(topic)} Concept 2
-### Sub-concept 2.1
-### Sub-concept 2.2
-`
-}
-
-// Mock renderMindmap
-const renderMindmap = (
-  container: HTMLDivElement,
-  data: MindmapNode,
-  options: {
-    layout: "right" | "bi"
-    colorScheme: "default" | "vibrant" | "summer" | "monochrome"
-    preserveTransform?: any
-    theme: "dark" | "light"
-    isMobile: boolean
-    forExport?: boolean
-  },
-) => {
-  const { layout, colorScheme, preserveTransform, theme, isMobile, forExport } = options
-  const width = forExport ? 1000 : container.clientWidth
-  const height = forExport ? 1000 : container.clientHeight
-  container.innerHTML = ""
-
-  const svg = d3
-    .select(container)
-    .append("svg")
-    .attr("width", width)
-    .attr("height", height)
-    .attr("viewBox", `0 0 ${width} ${height}`)
-    .attr("aria-label", "Mind map")
-
-  const g = svg.append("g")
-  const zoom = d3.zoom<SVGSVGElement, unknown>().on("zoom", (event) => {
-    g.attr("transform", event.transform)
-  })
-
-  svg.call(zoom)
-  if (preserveTransform) svg.call(zoom.transform, preserveTransform)
-
-  // Mock rendering nodes (simplified)
-  const node = g
-    .selectAll(".node")
-    .data([data])
-    .enter()
-    .append("g")
-    .attr("class", "node")
-    .attr("transform", `translate(${width / 2},${height / 2})`)
-
-  node
-    .append("circle")
-    .attr("r", 20)
-    .attr("fill", colorScheme === "default" ? (theme === "dark" ? "#fff" : "#000") : "#f00")
-
-  node
-    .append("text")
-    .attr("class", "mindmap-node-text")
-    .attr("dy", ".35em")
-    .text((d) => d.label)
-    .attr("aria-label", (d) => `Node: ${d.label}`)
-
-  return { zoom, svg }
-}
-
-// Mock useMobile hook
-const useMobile = (): boolean => {
-  const [isMobile, setIsMobile] = useState(false)
-
+  // Handle mounted state to avoid hydration mismatch
   useEffect(() => {
-    const checkMobile = () => setIsMobile(window.innerWidth < 768)
-    checkMobile()
-    window.addEventListener("resize", checkMobile)
-    return () => window.removeEventListener("resize", checkMobile)
+    setMounted(true)
   }, [])
 
-  return isMobile
-}
+  // Handle toggle sidebar function
+  const handleToggleSidebar = useCallback(() => {
+    console.log("Toggle sidebar called, current state:", isSidebarOpen)
+    setIsSidebarOpen((prev) => !prev)
+  }, [isSidebarOpen])
 
-// Mock useToast hook
-const useToast = () => {
-  const toast = ({
-    title,
-    description,
-    variant,
-    action,
-  }: {
-    title: string
-    description: string
-    variant?: "default" | "destructive"
-    action?: React.ReactNode
-  }) => {
-    // Simulate toast (replace with actual toast library like react-hot-toast)
-    console.log(`Toast: ${title} - ${description} (${variant})`, action)
-    alert(`${title}\n${description}`)
-  }
-  return { toast }
-}
-
-// Mock Header component
-const Header: React.FC<{ toggleSidebar: () => void; isSidebarOpen: boolean }> = ({
-  toggleSidebar,
-  isSidebarOpen,
-}) => (
-  <header className="bg-primary text-white p-4 flex justify-between items-center">
-    <h1 className="text-lg font-bold">Mind Map Maker</h1>
-    <button
-      onClick={toggleSidebar}
-      className="p-2 rounded bg-primary-foreground text-primary"
-      aria-label={isSidebarOpen ? "Close sidebar" : "Open sidebar"}
-      data-sidebar-trigger="true"
-    >
-      {isSidebarOpen ? "Close" : "Menu"}
-    </button>
-  </header>
-)
-
-// Mock Sidebar component
-const Sidebar: React.FC<{
-  topic: string
-  setTopic: (topic: string) => void
-  onGenerate: () => void
-  onExport: (format: "png" | "interactive") => void
-  isGenerating: boolean
-  onExampleTopic: (topic: string) => void
-  isSettingsOpen: boolean
-  layout: "right" | "bi"
-  setLayout: (layout: "right" | "bi") => void
-  colorScheme: "default" | "vibrant" | "summer" | "monochrome"
-  setColorScheme: (scheme: "default" | "vibrant" | "summer" | "monochrome") => void
-}> = ({
-  topic,
-  setTopic,
-  onGenerate,
-  onExport,
-  isGenerating,
-  onExampleTopic,
-  isSettingsOpen,
-  layout,
-  setLayout,
-  colorScheme,
-  setColorScheme,
-}) => (
-  <aside className="bg-background p-4 h-full border-r border-primary/30">
-    <input
-      type="text"
-      value={topic}
-      onChange={(e) => setTopic(e.target.value)}
-      placeholder="Enter topic"
-      className="w-full p-2 mb-4 border rounded"
-      aria-label="Mind map topic"
-    />
-    <button
-      onClick={onGenerate}
-      disabled={isGenerating}
-      className="w-full p-2 mb-2 bg-primary text-white rounded disabled:opacity-50"
-      aria-label="Generate mind map"
-    >
-      {isGenerating ? "Generating..." : "Generate"}
-    </button>
-    <button
-      onClick={() => onExport("png")}
-      className="w-full p-2 mb-2 bg-secondary text-white rounded"
-      aria-label="Export as PNG"
-    >
-      Export PNG
-    </button>
-    <button
-      onClick={() => onExport("interactive")}
-      className="w-full p-2 mb-2 bg-secondary text-white rounded"
-      aria-label="Export as interactive HTML"
-    >
-      Export HTML
-    </button>
-    <button
-      onClick={() => onExampleTopic("Sample Topic")}
-      className="w-full p-2 mb-2 bg-accent text-white rounded"
-      aria-label="Try example topic"
-    >
-      Try Example
-    </button>
-    {isSettingsOpen && (
-      <div className="mt-4">
-        <label className="block mb-2">Layout:</label>
-        <select
-          value={layout}
-          onChange={(e) => setLayout(e.target.value as "right" | "bi")}
-          className="w-full p-2 border rounded"
-          aria-label="Select mind map layout"
-        >
-          <option value="right">Right</option>
-          <option value="bi">Bi-directional</option>
-        </select>
-        <label className="block mt-4 mb-2">Color Scheme:</label>
-        <select
-          value={colorScheme}
-          onChange={(e) => setColorScheme(e.target.value as "default" | "vibrant" | "summer" | "monochrome")}
-          className="w-full p-2 border rounded"
-          aria-label="Select color scheme"
-        >
-          <option value="default">Default</option>
-          <option value="vibrant">Vibrant</option>
-          <option value="summer">Summer</option>
-          <option value="monochrome">Monochrome</option>
-        </select>
-      </div>
-    )}
-  </aside>
-)
-
-// Mock MobileInput component
-const MobileInput: React.FC<{
-  topic: string
-  setTopic: (topic: string) => void
-  onGenerate: () => void
-  isGenerating: boolean
-}> = ({ topic, setTopic, onGenerate, isGenerating }) => (
-  <div className="fixed bottom-0 left-0 right-0 bg-background p-4 border-t border-primary/30">
-    <input
-      type="text"
-      value={topic}
-      onChange={(e) => setTopic(e.target.value)}
-      placeholder="Enter topic"
-      className="w-full p-2 mb-2 border rounded"
-      aria-label="Mind map topic"
-    />
-    <button
-      onClick={onGenerate}
-      disabled={isGenerating}
-      className="w-full p-2 bg-primary text-white rounded disabled:opacity-50"
-      aria-label="Generate mind map"
-    >
-      {isGenerating ? "Generating..." : "Generate"}
-    </button>
-  </div>
-)
-
-// Mock LoadingSpinner component
-const LoadingSpinner: React.FC<{ size: number }> = ({ size }) => (
-  <div
-    className="animate-spin rounded-full border-4 border-primary border-t-transparent"
-    style={{ width: size, height: size }}
-    role="status"
-    aria-label="Loading"
-  />
-)
-
-// Custom rendering hook
-const useMindmapRenderer = ({
-  markdown,
-  layout,
-  colorScheme,
-  theme,
-  isMobile,
-  mindmapRef,
-}: {
-  markdown: string
-  layout: "right" | "bi"
-  colorScheme: "default" | "vibrant" | "summer" | "monochrome"
-  theme: "dark" | "light"
-  isMobile: boolean
-  mindmapRef: React.RefObject<HTMLDivElement>
-}) => {
-  const { toast } = useToast()
-  const parsedData = useMemo(() => parseMarkdown(markdown), [markdown])
-  const zoomRef = useRef<any>(null)
-  const transformRef = useRef<any>(null)
-
-  const render = useCallback(() => {
-    if (!mindmapRef.current) return
+  // Update the renderMindmapWithTransform function to be more stable:
+  const renderMindmapWithTransform = useCallback(() => {
+    if (!mindmapRef.current || !mounted) return
 
     try {
-      const { zoom, svg } = renderMindmap(mindmapRef.current, parsedData, {
+      // Parse markdown to hierarchical data
+      const data = parseMarkdown(markdown)
+
+      // Get the current theme
+      const currentTheme = (resolvedTheme as "dark" | "light") || "dark"
+
+      // Store the current transform before rendering
+      const preserveTransform = currentTransformRef.current
+
+      // Render mindmap with preserved transform and current theme
+      const { zoom, svg } = renderMindmap(mindmapRef.current, data, {
         layout,
         colorScheme,
-        preserveTransform: transformRef.current,
-        theme,
-        isMobile,
+        preserveTransform,
+        theme: currentTheme,
+        isMobile, // Pass isMobile flag to renderer
       })
 
-      svg.attr("role", "tree").attr("aria-label", "Interactive mind map")
-      svg.selectAll(".mindmap-node").attr("aria-label", (d: any) => `Node: ${d.data.label}`)
-
+      // Store the zoom behavior for later use
       zoomRef.current = zoom
-      if (!transformRef.current && svg.node()) {
+
+      // Only update the transform if we don't already have one
+      if (!preserveTransform && svg.node()) {
+        // Use requestAnimationFrame for smoother updates
         requestAnimationFrame(() => {
-          transformRef.current = d3.zoomTransform(svg.node() as any)
+          const transform = d3.zoomTransform(svg.node() as any)
+          currentTransformRef.current = transform
         })
       }
     } catch (error) {
       console.error("Error rendering mindmap:", error)
       toast({
         title: "Error rendering mindmap",
-        description: "Failed to render mindmap. Please try again.",
+        description: "There was an error rendering your mindmap. Please try again.",
         variant: "destructive",
-        action: <button onClick={() => render()} className="btn btn-secondary">Retry</button>,
       })
     }
-  }, [parsedData, layout, colorScheme, theme, isMobile, toast, mindmapRef])
+  }, [markdown, layout, colorScheme, resolvedTheme, mounted, toast, isMobile])
 
-  useEffect(() => {
-    return () => {
-      if (mindmapRef.current) mindmapRef.current.innerHTML = ""
-    }
-  }, [mindmapRef])
-
-  return { render, zoomRef, transformRef }
-}
-
-export const MindmapApp = () => {
-  const [markdown, setMarkdown] = useState(defaultMarkdown)
-  const [topic, setTopic] = useState("")
-  const [isGenerating, setIsGenerating] = useState(false)
-  const isMobile = useMobile()
-  const [layout, setLayout] = useState<"right" | "bi">(isMobile ? "right" : "bi")
-  const [colorScheme, setColorScheme] = useState<"default" | "vibrant" | "summer" | "monochrome">("default")
-  const [isSidebarOpen, setIsSidebarOpen] = useState(!isMobile)
-  const [isSettingsOpen] = useState(false)
-  const [mounted, setMounted] = useState(false)
-  const [isDefaultMindmap, setIsDefaultMindmap] = useState(true)
-  const mindmapRef = useRef<HTMLDivElement>(null)
-  const sidebarRef = useRef<HTMLDivElement>(null)
-  const { toast } = useToast()
-  const { resolvedTheme } = useTheme()
-  const lastThemeRef = useRef<string | undefined>(undefined)
-
-  useEffect(() => {
-    setMounted(true)
-    const savedLayout = localStorage.getItem("mindmap-layout")
-    const savedColorScheme = localStorage.getItem("mindmap-color-scheme")
-    if (savedLayout) setLayout(savedLayout as "right" | "bi")
-    if (savedColorScheme) setColorScheme(savedColorScheme as "default" | "vibrant" | "summer" | "monochrome")
-  }, [])
-
-  const { render: renderMindmapWithTransform, zoomRef, transformRef } = useMindmapRenderer({
-    markdown,
-    layout,
-    colorScheme,
-    theme: (resolvedTheme as "dark" | "light") || "dark",
-    isMobile,
-    mindmapRef,
-  })
-
-  useEffect(() => {
-    if (mounted) {
-      localStorage.setItem("mindmap-layout", layout)
-      localStorage.setItem("mindmap-color-scheme", colorScheme)
-    }
-  }, [layout, colorScheme, mounted])
-
-  const handleToggleSidebar = useCallback(() => {
-    setIsSidebarOpen((prev) => !prev)
-  }, [])
-
+  // Update the setLayoutWithTransform function to be more stable:
   const setLayoutWithTransform = useCallback(
     (newLayout: "right" | "bi") => {
+      // Only update if the layout actually changed
       if (layout === newLayout) return
-      const currentTransform = transformRef.current
+
+      // Capture current transform before changing layout
+      const currentTransform = currentTransformRef.current
+
+      // Update the layout
       setLayout(newLayout)
-      transformRef.current = currentTransform
+
+      // Ensure we preserve the transform
+      currentTransformRef.current = currentTransform
     },
     [layout],
   )
 
+  // Update the setColorSchemeWithTransform function to be more stable:
   const setColorSchemeWithTransform = useCallback(
     (newScheme: "default" | "vibrant" | "summer" | "monochrome") => {
+      // Only update if the scheme actually changed
       if (colorScheme === newScheme) return
-      const currentTransform = transformRef.current
+
+      // Capture current transform before changing color scheme
+      const currentTransform = currentTransformRef.current
+
+      // Update the color scheme
       setColorScheme(newScheme)
-      transformRef.current = currentTransform
+
+      // Ensure we preserve the transform
+      currentTransformRef.current = currentTransform
     },
     [colorScheme],
   )
 
+  // Initialize mindmap
   useEffect(() => {
-    if (mounted) renderMindmapWithTransform()
-  }, [renderMindmapWithTransform, mounted])
+    if (!mindmapRef.current || !mounted) return
 
+    renderMindmapWithTransform()
+
+    return () => {
+      // Clean up
+      if (mindmapRef.current) {
+        mindmapRef.current.innerHTML = ""
+      }
+    }
+  }, [markdown, layout, colorScheme, resolvedTheme, mounted, renderMindmapWithTransform])
+
+  // Update this effect in mindmap-app.tsx
+  // Handle mobile view
   useEffect(() => {
     if (isMobile) {
-      setIsSidebarOpen(false)
-      if (isDefaultMindmap) setLayout("right")
-      transformRef.current = null
+      // On mobile, only set sidebar closed on initial load, not on every render
+      if (!mounted) {
+        setIsSidebarOpen(false)
+      }
+      // Reset transform when switching to mobile to ensure proper centering
+      currentTransformRef.current = null
     } else {
-      setIsSidebarOpen(true)
-      if (isDefaultMindmap) setLayout("bi")
-      transformRef.current = null
+      // On desktop, only set sidebar open on initial load or when switching from mobile
+      if (!mounted) {
+        setIsSidebarOpen(true)
+      }
+      // Reset transform when switching to desktop to ensure proper centering
+      currentTransformRef.current = null
     }
-    if (mounted) renderMindmapWithTransform()
-  }, [isMobile, isDefaultMindmap, mounted, renderMindmapWithTransform])
 
-  useEffect(() => {
-    if (!mounted || !mindmapRef.current) return
-    const observer = new ResizeObserver(() => {
-      if (isDefaultMindmap) transformRef.current = null
+    // Re-render the mindmap with the new transform
+    if (mounted && mindmapRef.current) {
       renderMindmapWithTransform()
-    })
-    observer.observe(mindmapRef.current)
-    return () => observer.disconnect()
-  }, [mounted, renderMindmapWithTransform, isDefaultMindmap])
+    }
+  }, [isMobile, mounted, renderMindmapWithTransform])
 
+  // Update layout when switching between mobile and desktop for default mindmap
   useEffect(() => {
-    if (!mounted || lastThemeRef.current === resolvedTheme) return
-    lastThemeRef.current = resolvedTheme as string
-    renderMindmapWithTransform()
-  }, [resolvedTheme, mounted, renderMindmapWithTransform])
+    if (isDefaultMindmap) {
+      setLayout(isMobile ? "right" : "bi")
+    }
+  }, [isMobile, isDefaultMindmap])
 
+  // Handle window resize
   useEffect(() => {
-    if (!mounted || !isMobile || !isSidebarOpen) return
-    const handleClickOutside = (event: MouseEvent | TouchEvent) => {
+    if (!mounted) return
+
+    const handleResize = () => {
+      // Use a debounce to avoid too many re-renders
+      if (mindmapRef.current) {
+        // Reset transform on resize to ensure proper centering
+        if (isDefaultMindmap) {
+          currentTransformRef.current = null
+        }
+        renderMindmapWithTransform()
+      }
+    }
+
+    // Debounced resize handler
+    let resizeTimer: NodeJS.Timeout
+    const debouncedResize = () => {
+      clearTimeout(resizeTimer)
+      resizeTimer = setTimeout(handleResize, 250)
+    }
+
+    window.addEventListener("resize", debouncedResize)
+    return () => {
+      window.removeEventListener("resize", debouncedResize)
+      clearTimeout(resizeTimer)
+    }
+  }, [markdown, layout, colorScheme, resolvedTheme, mounted, renderMindmapWithTransform, isDefaultMindmap])
+
+  // Handle theme change - UPDATED to preserve transform
+  useEffect(() => {
+    if (!mounted) return
+
+    // Only capture the current transform when the theme actually changes
+    if (lastThemeRef.current !== resolvedTheme) {
+      // Store the current transform before theme change
+      const currentTransform = currentTransformRef.current
+
+      // Re-render when theme changes to apply correct styles
+      renderMindmapWithTransform()
+
+      // Update the last theme reference
+      lastThemeRef.current = resolvedTheme as string
+    }
+  }, [theme, resolvedTheme, mounted, renderMindmapWithTransform])
+
+  // Handle click outside sidebar to close it on mobile
+  useEffect(() => {
+    if (!mounted || !isMobile) return
+
+    const handleClickOutside = (event: MouseEvent) => {
       if (
+        isSidebarOpen &&
         sidebarRef.current &&
         !sidebarRef.current.contains(event.target as Node) &&
         !(event.target as Element).closest('[data-sidebar-trigger="true"]')
@@ -481,35 +231,21 @@ export const MindmapApp = () => {
         setIsSidebarOpen(false)
       }
     }
+
     document.addEventListener("mousedown", handleClickOutside)
     document.addEventListener("touchstart", handleClickOutside)
+
     return () => {
       document.removeEventListener("mousedown", handleClickOutside)
       document.removeEventListener("touchstart", handleClickOutside)
     }
-  }, [isMobile, isSidebarOpen, mounted])
+  }, [isSidebarOpen, isMobile, mounted])
 
-  useEffect(() => {
-    if (!mounted || !zoomRef.current) return
-    const handleKeydown = (e: KeyboardEvent) => {
-      const svg = d3.select(mindmapRef.current).select("svg")
-      if (e.key === "+") zoomRef.current.scaleBy(svg.node(), 0.9)
-      if (e.key === "-") zoomRef.current.scaleBy(svg.node(), 1.1)
-      if (e.key === "ArrowLeft") zoomRef.current.translateBy(svg.node(), -10, 0)
-      if (e.key === "ArrowRight") zoomRef.current.translateBy(svg.node(), 10, 0)
-      if (e.key === "ArrowUp") zoomRef.current.translateBy(svg.node(), 0, -10)
-      if (e.key === "ArrowDown") zoomRef.current.translateBy(svg.node(), 0, 10)
-      transformRef.current = d3.zoomTransform(svg.node() as any)
-    }
-    window.addEventListener("keydown", handleKeydown)
-    return () => window.removeEventListener("keydown", handleKeydown)
-  }, [mounted, zoomRef])
-
+  // Update the handleGenerateMindmap function to better preserve transform:
   const handleGenerateMindmap = async () => {
     const MAX_CHARS = 90
-    const sanitizedTopic = sanitizeHtml(topic, { allowedTags: [] })
 
-    if (!sanitizedTopic.trim()) {
+    if (!topic.trim()) {
       toast({
         title: "Topic is required",
         description: "Please enter a topic to generate a mindmap",
@@ -518,7 +254,7 @@ export const MindmapApp = () => {
       return
     }
 
-    if (sanitizedTopic.length > MAX_CHARS) {
+    if (topic.length > MAX_CHARS) {
       toast({
         title: "Topic too long",
         description: `Please limit your topic to ${MAX_CHARS} characters or less`,
@@ -528,26 +264,41 @@ export const MindmapApp = () => {
     }
 
     setIsGenerating(true)
-    if (isMobile) setIsSidebarOpen(false)
-    if (mindmapRef.current) mindmapRef.current.innerHTML = ""
+
+    // Close sidebar on mobile after generating
+    if (isMobile) {
+      setIsSidebarOpen(false)
+    }
+
+    // Clear the current mindmap to show the loading spinner
+    if (mindmapRef.current) {
+      mindmapRef.current.innerHTML = ""
+    }
 
     try {
-      transformRef.current = null
-      const generatedMarkdown = await generateMindmapMarkdown(sanitizedTopic)
+      // Reset transform for new mindmaps
+      currentTransformRef.current = null
+
+      const generatedMarkdown = await generateMindmapMarkdown(topic)
+
+      // Update the markdown
       setMarkdown(generatedMarkdown)
-      setIsDefaultMindmap(false)
+      setIsDefaultMindmap(false) // Mark that we're no longer showing the default mindmap
+
       toast({
         title: "Mind map generated",
-        description: `Mind map for "${sanitizedTopic}" has been created`,
+        description: `Mind map for "${topic}" has been created`,
       })
     } catch (error) {
       console.error("Error generating mindmap:", error)
       toast({
         title: "Error generating mind map",
-        description: error instanceof Error ? error.message : "Failed to generate mind map.",
+        description:
+          error instanceof Error ? error.message : "There was an error generating your mind map. Please try again.",
         variant: "destructive",
-        action: <button onClick={() => handleGenerateMindmap()} className="btn btn-secondary">Retry</button>,
       })
+
+      // If there was an error, re-render the previous mindmap
       renderMindmapWithTransform()
     } finally {
       setIsGenerating(false)
@@ -558,233 +309,592 @@ export const MindmapApp = () => {
     if (!mindmapRef.current) return
 
     try {
+      // Parse the markdown to get the complete mindmap data
+      const data = parseMarkdown(markdown)
       const currentTheme = (resolvedTheme as "dark" | "light") || "dark"
+
+      // Create a temporary container for the export
       const tempContainer = document.createElement("div")
       tempContainer.style.position = "absolute"
       tempContainer.style.left = "-9999px"
+      tempContainer.style.top = "-9999px"
+      tempContainer.style.width = "5000px" // Large enough to fit the entire mindmap
+      tempContainer.style.height = "3000px"
       document.body.appendChild(tempContainer)
 
-      const data = parseMarkdown(markdown)
-      const { svg } = renderMindmap(tempContainer, data, {
+      // Render the complete mindmap in the temporary container
+      // Use null for preserveTransform to ensure we get the default view
+      renderMindmap(tempContainer, data, {
         layout,
         colorScheme,
-        preserveTransform: null,
+        preserveTransform: null, // No transform to get the full view
         theme: currentTheme,
-        isMobile,
-        forExport: true,
+        forExport: true, // Special flag for export mode
       })
 
-      const gElement = svg.node()?.querySelector("g")
-      if (!gElement) throw new Error("Failed to find content for export")
+      // Get the SVG element from the temporary container
+      const svgElement = tempContainer.querySelector("svg")
+      if (!svgElement) {
+        document.body.removeChild(tempContainer)
+        throw new Error("Failed to generate SVG for export")
+      }
+
+      // Get the bounding box of all content
+      const gElement = svgElement.querySelector("g")
+      if (!gElement) {
+        document.body.removeChild(tempContainer)
+        throw new Error("Failed to find content for export")
+      }
 
       const bbox = gElement.getBBox()
+      const width = bbox.width
+      const height = bbox.height
+      const x = bbox.x
+      const y = bbox.y
+
+      // Add padding
       const padding = 100
-      const width = bbox.width + padding * 2
-      const height = bbox.height + padding * 2
-      const viewBox = `${bbox.x - padding} ${bbox.y - padding} ${width} ${height}`
+      const viewBox = `${x - padding} ${y - padding} ${width + padding * 2} ${height + padding * 2}`
 
-      svg.attr("viewBox", viewBox).attr("width", width).attr("height", height)
+      // Set the viewBox to include all content with padding
+      svgElement.setAttribute("viewBox", viewBox)
+      svgElement.setAttribute("width", `${width + padding * 2}`)
+      svgElement.setAttribute("height", `${height + padding * 2}`)
 
+      // Add font styles directly to the SVG to ensure they're preserved
       const style = document.createElement("style")
       style.textContent = `
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap');
-        .mindmap-node-text { font-family: 'Inter', sans-serif; font-weight: 500; }
-        .mindmap-node-text.depth-0 { font-size: 18px; font-weight: 700; }
-        .mindmap-node-text.depth-1 { font-size: 16px; font-weight: 700; }
-        .mindmap-node-text.depth-2 { font-size: 14px; font-weight: 500; }
-      `
-      svg.node()?.prepend(style)
+      @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap');
+      .mindmap-node-text {
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+        font-weight: 500;
+      }
+      .mindmap-node-text.depth-0 {
+        font-size: 18px;
+        font-weight: 700;
+      }
+      .mindmap-node-text.depth-1 {
+        font-size: 16px;
+        font-weight: 700;
+      }
+      .mindmap-node-text.depth-2 {
+        font-size: 14px;
+        font-weight: 500;
+      }
+    `
+      svgElement.prepend(style)
 
       if (format === "interactive") {
-        const svgData = new XMLSerializer().serializeToString(svg.node()!)
+        // Create an interactive HTML file with the SVG embedded
+        const svgData = new XMLSerializer().serializeToString(svgElement)
+
+        // Create HTML content with improved zoom/pan functionality
         const htmlContent = `
-          <!DOCTYPE html>
-          <html lang="en">
-          <head>
-            <meta charset="UTF-8">
-            <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            <title>Mindmap: ${sanitizeHtml(topic || "Mindmap")} | Mind-Map-Maker.com</title>
-            <style>
-              body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: ${currentTheme === "dark" ? "#1a1a1a" : "#fff"}; }
-              #svg-container { width: 100%; height: 100%; }
-              svg { width: 100%; height: 100%; cursor: grab; }
-              svg:active { cursor: grabbing; }
-              .controls { position: fixed; bottom: 20px; right: 20px; display: flex; flex-direction: column; gap: 10px; }
-              .control-button { width: 40px; height: 40px; border-radius: 50%; background: ${currentTheme === "dark" ? "#333" : "#f0f0f0"}; border: none; cursor: pointer; }
-              .zoom-level { position: fixed; bottom: 20px; left: 20px; background: ${currentTheme === "dark" ? "rgba(0,0,0,0.7)" : "rgba(255,255,255,0.7)"}; padding: 5px 10px; border-radius: 15px; }
-            </style>
-          </head>
-          <body>
-            <div id="svg-container">${svgData}</div>
-            <div class="controls">
-              <button class="control-button" id="zoom-in">+</button>
-              <button class="control-button" id="zoom-out">-</button>
-              <button class="control-button" id="reset">⟲</button>
-            </div>
-            <div class="zoom-level" id="zoom-level">100%</div>
-            <script>
-              const svg = document.querySelector('svg');
-              const zoomLevelDisplay = document.getElementById('zoom-level');
-              let currentViewBox = [${viewBox.split(" ").join(",")}];
-              let zoomLevel = 1;
-
-              function updateZoomLevel() {
-                zoomLevelDisplay.textContent = \`\${Math.round(zoomLevel * 100)}%\`;
+      <!DOCTYPE html>
+      <html lang="en">
+      <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Mindmap: ${topic || "Mindmap"} | Mind-Map-Maker.com</title>
+        <meta name="description" content="Interactive mindmap created with Mind-Map-Maker.com">
+        <meta name="generator" content="Mind-Map-Maker.com">
+        <script defer data-domain="mind-map-maker.com" src="https://plausible.io/js/script.js"></script>
+        <style>
+          body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background-color: ${currentTheme === "dark" ? "#1a1a1a" : "#ffffff"};
+            color: ${currentTheme === "dark" ? "#ffffff" : "#000000"};
+          }
+          
+          #svg-container {
+            width: 100%;
+            height: 100%;
+            position: relative;
+            overflow: hidden;
+          }
+          
+          svg {
+            width: 100%;
+            height: 100%;
+            cursor: grab;
+          }
+          
+          svg:active {
+            cursor: grabbing;
+          }
+          
+          .controls {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            z-index: 1000;
+          }
+          
+          .control-button {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background-color: ${currentTheme === "dark" ? "#333" : "#f0f0f0"};
+            color: ${currentTheme === "dark" ? "#fff" : "#333"};
+            border: none;
+            font-size: 18px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            transition: background-color 0.2s;
+          }
+          
+          .control-button:hover {
+            background-color: ${currentTheme === "dark" ? "#444" : "#e0e0e0"};
+          }
+          
+          .info-panel {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            background-color: ${currentTheme === "dark" ? "rgba(0,0,0,0.7)" : "rgba(255,255,255,0.7)"};
+            padding: 10px 15px;
+            border-radius: 5px;
+            font-size: 14px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            backdrop-filter: blur(5px);
+            z-index: 1000;
+            transition: opacity 0.3s;
+          }
+          
+          .info-panel.hidden {
+            opacity: 0;
+          }
+          
+          .zoom-level {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            background-color: ${currentTheme === "dark" ? "rgba(0,0,0,0.7)" : "rgba(255,255,255,0.7)"};
+            padding: 5px 10px;
+            border-radius: 15px;
+            font-size: 12px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            backdrop-filter: blur(5px);
+          }
+          
+          .footer {
+            position: fixed;
+            bottom: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 12px;
+            opacity: 0.7;
+            z-index: 1000;
+          }
+          
+          .footer a {
+            color: ${currentTheme === "dark" ? "#fff" : "#333"};
+            text-decoration: none;
+          }
+          
+          .footer a:hover {
+            text-decoration: underline;
+          }
+        </style>
+      </head>
+      <body>
+        <div id="svg-container">
+          ${svgData}
+        </div>
+        
+        <div class="controls">
+          <button class="control-button" id="zoom-in" title="Zoom In">+</button>
+          <button class="control-button" id="zoom-out" title="Zoom Out">-</button>
+          <button class="control-button" id="reset" title="Reset View">⟲</button>
+          <button class="control-button" id="fit" title="Fit to Screen">⤢</button>
+        </div>
+        
+        <div class="info-panel" id="info-panel">
+          <p>Click and drag to pan. Use buttons or mouse wheel to zoom.</p>
+        </div>
+        
+        <div class="zoom-level" id="zoom-level">100%</div>
+        
+        <div class="footer">
+          <a href="https://mind-map-maker.com" target="_blank">Created with Mind-Map-Maker.com</a>
+        </div>
+        
+        <script>
+          document.addEventListener('DOMContentLoaded', function() {
+            const svgContainer = document.getElementById('svg-container');
+            const svg = svgContainer.querySelector('svg');
+            const mainGroup = svg.querySelector('g');
+            const infoPanel = document.getElementById('info-panel');
+            const zoomLevelDisplay = document.getElementById('zoom-level');
+            
+            // Hide info panel after 5 seconds
+            setTimeout(() => {
+              infoPanel.classList.add('hidden');
+            }, 5000);
+            
+            // Get the original viewBox
+            const originalViewBox = svg.getAttribute('viewBox').split(' ').map(Number);
+            
+            // Calculate a better initial viewBox to fit the screen
+            function calculateInitialViewBox() {
+              const bbox = mainGroup.getBBox();
+              const containerWidth = svgContainer.clientWidth;
+              const containerHeight = svgContainer.clientHeight;
+              
+              // Calculate the aspect ratios
+              const bboxRatio = bbox.width / bbox.height;
+              const containerRatio = containerWidth / containerHeight;
+              
+              let viewBoxWidth, viewBoxHeight;
+              
+              if (bboxRatio > containerRatio) {
+                // If the mindmap is wider than the container
+                viewBoxWidth = bbox.width * 1.1; // Add 10% padding
+                viewBoxHeight = viewBoxWidth / containerRatio;
+              } else {
+                // If the mindmap is taller than the container
+                viewBoxHeight = bbox.height * 1.1; // Add 10% padding
+                viewBoxWidth = viewBoxHeight / containerRatio;
               }
-
-              svg.addEventListener('wheel', (e) => {
-                e.preventDefault();
-                const factor = 1 + Math.sign(e.deltaY) * 0.1;
-                zoomLevel /= factor;
-                currentViewBox = [
-                  currentViewBox[0] + (e.clientX / window.innerWidth) * currentViewBox[2] * (1 - factor),
-                  currentViewBox[1] + (e.clientY / window.innerHeight) * currentViewBox[3] * (1 - factor),
-                  currentViewBox[2] * factor,
-                  currentViewBox[3] * factor,
-                ];
+              
+              const viewBoxX = bbox.x - (viewBoxWidth - bbox.width) / 2;
+              const viewBoxY = bbox.y - (viewBoxHeight - bbox.height) / 2;
+              
+              return [viewBoxX, viewBoxY, viewBoxWidth, viewBoxHeight];
+            }
+            
+            // Set initial viewBox to fit the screen
+            const initialViewBox = calculateInitialViewBox();
+            svg.setAttribute('viewBox', initialViewBox.join(' '));
+            
+            // Variables for pan/zoom
+            let isPanning = false;
+            let startPoint = { x: 0, y: 0 };
+            let currentViewBox = [...initialViewBox];
+            let zoomLevel = 1;
+            
+            // Update zoom level display
+            function updateZoomLevelDisplay() {
+              zoomLevelDisplay.textContent = \`\${Math.round(zoomLevel * 100)}%\`;
+            }
+            
+            // Pan functionality
+            svg.addEventListener('mousedown', startPan);
+            window.addEventListener('mousemove', pan);
+            window.addEventListener('mouseup', endPan);
+            
+            // Touch support
+            svg.addEventListener('touchstart', startPanTouch, { passive: false });
+            window.addEventListener('touchmove', panTouch, { passive: false });
+            window.addEventListener('touchend', endPan);
+            
+            // Zoom with mouse wheel - with moderate sensitivity
+            svg.addEventListener('wheel', wheelZoom, { passive: false });
+            
+            // Control buttons
+            document.getElementById('zoom-in').addEventListener('click', () => zoomByFactor(0.9));
+            document.getElementById('zoom-out').addEventListener('click', () => zoomByFactor(1.1));
+            document.getElementById('reset').addEventListener('click', resetView);
+            document.getElementById('fit').addEventListener('click', fitToScreen);
+            
+            function startPan(evt) {
+              isPanning = true;
+              startPoint = { x: evt.clientX, y: evt.clientY };
+              svg.style.cursor = 'grabbing';
+            }
+            
+            function startPanTouch(evt) {
+              if (evt.touches.length === 1) {
+                evt.preventDefault();
+                isPanning = true;
+                startPoint = { x: evt.touches[0].clientX, y: evt.touches[0].clientY };
+              }
+            }
+            
+            function pan(evt) {
+              if (!isPanning) return;
+              
+              const endPoint = { x: evt.clientX, y: evt.clientY };
+              const dx = (startPoint.x - endPoint.x) * (currentViewBox[2] / svgContainer.clientWidth);
+              const dy = (startPoint.y - endPoint.y) * (currentViewBox[3] / svgContainer.clientHeight);
+              
+              currentViewBox[0] += dx;
+              currentViewBox[1] += dy;
+              
+              svg.setAttribute('viewBox', currentViewBox.join(' '));
+              
+              startPoint = endPoint;
+            }
+            
+            function panTouch(evt) {
+              if (!isPanning || evt.touches.length !== 1) return;
+              
+              evt.preventDefault();
+              const endPoint = { x: evt.touches[0].clientX, y: evt.touches[0].clientY };
+              const dx = (startPoint.x - endPoint.x) * (currentViewBox[2] / svgContainer.clientWidth);
+              const dy = (startPoint.y - endPoint.y) * (currentViewBox[3] / svgContainer.clientHeight);
+              
+              currentViewBox[0] += dx;
+              currentViewBox[1] += dy;
+              
+              svg.setAttribute('viewBox', currentViewBox.join(' '));
+              
+              startPoint = endPoint;
+            }
+            
+            function endPan() {
+              isPanning = false;
+              svg.style.cursor = 'grab';
+            }
+            
+            function wheelZoom(evt) {
+              evt.preventDefault();
+              
+              const mouseX = evt.clientX;
+              const mouseY = evt.clientY;
+              
+              // Calculate mouse position relative to SVG viewBox
+              const pointX = currentViewBox[0] + (mouseX / svgContainer.clientWidth) * currentViewBox[2];
+              const pointY = currentViewBox[1] + (mouseY / svgContainer.clientHeight) * currentViewBox[3];
+              
+              // Normalize wheel delta for better cross-browser support
+              // Use a moderate factor for zooming - faster than before but not too fast
+              const wheelDelta = evt.deltaY;
+              const normalizedDelta = Math.sign(wheelDelta) * Math.min(Math.abs(wheelDelta * 0.05), 10);
+              
+              // Calculate zoom factor - moderate speed
+              const zoomFactor = 1 + normalizedDelta * 0.09;
+              
+              // Apply zoom
+              zoomAtPoint(pointX, pointY, zoomFactor);
+            }
+            
+            function zoomByFactor(factor) {
+              // Zoom centered on the middle of the viewBox
+              const centerX = currentViewBox[0] + currentViewBox[2] / 2;
+              const centerY = currentViewBox[1] + currentViewBox[3] / 2;
+              
+              zoomAtPoint(centerX, centerY, factor);
+            }
+            
+            function zoomAtPoint(pointX, pointY, factor) {
+              // Update zoom level
+              zoomLevel = zoomLevel / factor;
+              updateZoomLevelDisplay();
+              
+              // Calculate new dimensions
+              const newWidth = currentViewBox[2] * factor;
+              const newHeight = currentViewBox[3] * factor;
+              
+              // Calculate new top-left corner to zoom at the mouse point
+              const newX = pointX - (pointX - currentViewBox[0]) * factor;
+              const newY = pointY - (pointY - currentViewBox[1]) * factor;
+              
+              // Update viewBox
+              currentViewBox = [newX, newY, newWidth, newHeight];
+              svg.setAttribute('viewBox', currentViewBox.join(' '));
+            }
+            
+            function resetView() {
+              currentViewBox = [...originalViewBox];
+              svg.setAttribute('viewBox', currentViewBox.join(' '));
+              zoomLevel = 1;
+              updateZoomLevelDisplay();
+            }
+            
+            function fitToScreen() {
+              currentViewBox = [...initialViewBox];
+              svg.setAttribute('viewBox', currentViewBox.join(' '));
+              zoomLevel = 1;
+              updateZoomLevelDisplay();
+            }
+            
+            // Initial zoom level display
+            updateZoomLevelDisplay();
+            
+            // Handle window resize
+            window.addEventListener('resize', () => {
+              // Recalculate the initial viewBox when window is resized
+              if (zoomLevel === 1) {
+                const newInitialViewBox = calculateInitialViewBox();
+                currentViewBox = [...newInitialViewBox];
                 svg.setAttribute('viewBox', currentViewBox.join(' '));
-                updateZoomLevel();
-              });
+              }
+            });
+          });
+        </script>
+      </body>
+      </html>
+      `
 
-              document.getElementById('zoom-in').addEventListener('click', () => {
-                zoomLevel /= 0.9;
-                currentViewBox[2] *= 0.9;
-                currentViewBox[3] *= 0.9;
-                svg.setAttribute('viewBox', currentViewBox.join(' '));
-                updateZoomLevel();
-              });
-
-              document.getElementById('zoom-out').addEventListener('click', () => {
-                zoomLevel /= 1.1;
-                currentViewBox[2] *= 1.1;
-                currentViewBox[3] *= 1.1;
-                svg.setAttribute('viewBox', currentViewBox.join(' '));
-                updateZoomLevel();
-              });
-
-              document.getElementById('reset').addEventListener('click', () => {
-                currentViewBox = [${viewBox.split(" ").join(",")}];
-                zoomLevel = 1;
-                svg.setAttribute('viewBox', currentViewBox.join(' '));
-                updateZoomLevel();
-              });
-
-              updateZoomLevel();
-            </script>
-          </body>
-          </html>
-        `
+        // Create a blob with the HTML content
         const blob = new Blob([htmlContent], { type: "text/html" })
         const url = URL.createObjectURL(blob)
+
+        // Create a download link
         const a = document.createElement("a")
         a.href = url
-        a.download = `mindmap-${sanitizeHtml(topic || "export")}.html`
+        a.download = `mindmap-${topic || "export"}.html`
         a.click()
         URL.revokeObjectURL(url)
       } else if (format === "png") {
+        // Export as PNG with higher quality
         const canvas = document.createElement("canvas")
         const ctx = canvas.getContext("2d")
-        if (!ctx) throw new Error("Failed to create canvas context")
+        if (!ctx) {
+          document.body.removeChild(tempContainer)
+          throw new Error("Failed to create canvas context")
+        }
 
-        const scale = 2
-        canvas.width = width * scale
-        canvas.height = height * scale
+        // Set canvas size with higher resolution for better quality
+        const scale = 2 // Higher resolution
+        canvas.width = (width + padding * 2) * scale
+        canvas.height = (height + padding * 2) * scale
 
-        const svgData = new XMLSerializer().serializeToString(svg.node()!)
+        // Convert SVG to data URL
+        const svgData = new XMLSerializer().serializeToString(svgElement)
         const svgBlob = new Blob([svgData], { type: "image/svg+xml" })
         const url = URL.createObjectURL(svgBlob)
 
         const img = new Image()
         img.crossOrigin = "anonymous"
+
         img.onload = () => {
-          ctx.fillStyle = currentTheme === "dark" ? "#1a1a1a" : "#fff"
+          // Fill background
+          ctx.fillStyle = currentTheme === "dark" ? "#1a1a1a" : "#ffffff"
           ctx.fillRect(0, 0, canvas.width, canvas.height)
+
+          // Scale the context for higher resolution
           ctx.scale(scale, scale)
-          ctx.drawImage(img, 0, 0, width, height)
+
+          // Draw the image
+          ctx.drawImage(img, 0, 0, width + padding * 2, height + padding * 2)
+
+          // Reset scale
           ctx.scale(1 / scale, 1 / scale)
+
+          // Add a small watermark
           ctx.font = `${10 * scale}px Arial`
           ctx.fillStyle = currentTheme === "dark" ? "rgba(255,255,255,0.5)" : "rgba(0,0,0,0.5)"
           ctx.textAlign = "right"
           ctx.fillText("mind-map-maker.com", canvas.width - 10, canvas.height - 10)
 
-          const pngUrl = canvas.toDataURL("image/png", 1.0)
+          const pngUrl = canvas.toDataURL("image/png", 1.0) // Use maximum quality
           const a = document.createElement("a")
           a.href = pngUrl
-          a.download = `mindmap-${sanitizeHtml(topic || "export")}.png`
+          a.download = `mindmap-${topic || "export"}.png`
           a.click()
           URL.revokeObjectURL(url)
         }
-        img.onerror = () => {
-          throw new Error("Failed to load SVG for PNG export")
+
+        img.onerror = (err) => {
+          console.error("Image loading error:", err)
+          document.body.removeChild(tempContainer)
+          toast({
+            title: "Export failed",
+            description: "Failed to generate PNG. Please try again.",
+            variant: "destructive",
+          })
         }
+
         img.src = url
       }
 
+      // Clean up the temporary container after a delay to ensure the image has loaded
       setTimeout(() => {
-        if (document.body.contains(tempContainer)) document.body.removeChild(tempContainer)
+        if (document.body.contains(tempContainer)) {
+          document.body.removeChild(tempContainer)
+        }
       }, 2000)
 
       toast({
-        title: format === "interactive" ? "Interactive HTML exported" : "PNG exported",
+        title: format === "interactive" ? "Interactive HTML exported" : `Exported as ${format.toUpperCase()}`,
         description: "Your mindmap has been exported successfully",
       })
     } catch (error) {
       console.error("Export error:", error)
       toast({
         title: "Export failed",
-        description: `Failed to export as ${format === "interactive" ? "HTML" : "PNG"}. Please try again.`,
+        description: `Failed to export as ${format === "interactive" ? "HTML" : format.toUpperCase()}. Please try again.`,
         variant: "destructive",
       })
     }
   }
 
   const handleExampleTopic = (exampleTopic: string) => {
-    const sanitizedTopic = sanitizeHtml(exampleTopic, { allowedTags: [] })
-    setTopic(sanitizedTopic)
-    transformRef.current = null
+    // First set the topic
+    setTopic(exampleTopic)
 
+    // Reset transform for new mindmaps
+    currentTransformRef.current = null
+
+    // Use setTimeout to ensure the topic state is updated before generating
     setTimeout(() => {
+      // Create a new function that doesn't depend on the topic state
       setIsGenerating(true)
-      if (isMobile) setIsSidebarOpen(false)
-      if (mindmapRef.current) mindmapRef.current.innerHTML = ""
 
-      generateMindmapMarkdown(sanitizedTopic)
+      // Close sidebar on mobile after generating
+      if (isMobile) {
+        setIsSidebarOpen(false)
+      }
+
+      // Clear the current mindmap to show the loading spinner
+      if (mindmapRef.current) {
+        mindmapRef.current.innerHTML = ""
+      }
+
+      generateMindmapMarkdown(exampleTopic)
         .then((generatedMarkdown) => {
+          // Update the markdown
           setMarkdown(generatedMarkdown)
-          setIsDefaultMindmap(false)
+          setIsDefaultMindmap(false) // Mark that we're no longer showing the default mindmap
+
           toast({
             title: "Mind map generated",
-            description: `Mind map for "${sanitizedTopic}" has been created`,
+            description: `Mind map for "${exampleTopic}" has been created`,
           })
         })
         .catch((error) => {
           console.error("Error generating mindmap:", error)
           toast({
             title: "Error generating mind map",
-            description: error instanceof Error ? error.message : "Failed to generate mind map.",
+            description:
+              error instanceof Error ? error.message : "There was an error generating your mind map. Please try again.",
             variant: "destructive",
-            action: <button onClick={() => handleExampleTopic(sanitizedTopic)} className="btn btn-secondary">Retry</button>,
           })
+
+          // If there was an error, re-render the previous mindmap
           renderMindmapWithTransform()
         })
-        .finally(() => setIsGenerating(false))
+        .finally(() => {
+          setIsGenerating(false)
+        })
     }, 0)
   }
 
+  // Create a memoized topic setter that doesn't cause re-renders of the mindmap
   const handleTopicChange = useCallback((newTopic: string) => {
     setTopic(newTopic)
   }, [])
 
+  // Don't render until client-side to avoid hydration mismatch
   if (!mounted) {
-    return (
-      <div className="flex items-center justify-center h-screen bg-background">
-        <LoadingSpinner size={60} />
-      </div>
-    )
+    return null
   }
 
   return (
-    <div className="flex flex-col h-screen mobile-container flex-grow">
+    <div className="flex flex-col h-screen md:h-screen mobile-container md:static flex-grow">
       <Header toggleSidebar={handleToggleSidebar} isSidebarOpen={isSidebarOpen} />
       <div className="flex flex-1 overflow-hidden h-[calc(100vh-3.5rem)]">
         <div
@@ -806,13 +916,14 @@ export const MindmapApp = () => {
           />
         </div>
         <div className="flex-1 relative overflow-hidden">
+          {/* Add padding-bottom on mobile to make room for the fixed input */}
           <div
             ref={mindmapRef}
-            className="w-full h-full overflow-hidden pb-16 md:pb-0 border-b border-primary/30 dark:border-primary/40"
+            className="w-full h-full overflow-hidden md:pb-0 pb-16 border-b border-primary/30 dark:border-primary/40"
             tabIndex={0}
-            role="region"
-            aria-label="Mind map canvas"
           />
+
+          {/* Loading spinner overlay */}
           {isGenerating && (
             <div className="absolute inset-0 flex items-center justify-center bg-background/80 backdrop-blur-sm z-10">
               <div className="flex flex-col items-center gap-4">
@@ -823,6 +934,8 @@ export const MindmapApp = () => {
           )}
         </div>
       </div>
+
+      {/* Mobile-only fixed input at bottom of screen */}
       {isMobile && (
         <MobileInput
           topic={topic}
