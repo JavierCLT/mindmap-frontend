@@ -21,7 +21,7 @@ export function InfoModal({ isOpen, onClose }: InfoModalProps) {
           <div>
             <h3 className="font-medium">How to use:</h3>
             <ul className="list-disc pl-5 text-sm">
-              <li>Enter a topic in the sidebar and click "Generate Mind Map"</li>
+              <li>Enter a topic using up to 90 characters in the sidebar and click "Generate Mind Map"</li>
               <li>Choose from example topics for quick generation</li>
               <li>Select different layouts and color schemes</li>
               <li>Export your mind map as PNG or interactive HTML</li>
