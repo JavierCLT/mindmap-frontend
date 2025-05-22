@@ -41,8 +41,8 @@ export function Sidebar({
   const MAX_CHARS = 90
   const [charCount, setCharCount] = useState(0)
 
-  // Updated example topics
-  const exampleTopics = ["personal finance", "career tips", "plan trip", "learn about ai"]
+  // Updated example topics - two longer, more detailed options
+  const exampleTopics = ["Personal finance guide for teens", "Plan a trip to Madrid, Spain"]
 
   // Color scheme preview swatches
   const colorSwatches = {
@@ -65,6 +65,14 @@ export function Sidebar({
     }
   }
 
+  // Add a keydown handler to the input field
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter" && !isGenerating && topic.trim() && topic.length <= MAX_CHARS) {
+      e.preventDefault()
+      onGenerate()
+    }
+  }
+
   return (
     <div className="w-80 min-w-[20rem] border-r border-border bg-card p-4 overflow-y-auto h-full">
       <Card className="mb-4">
@@ -74,13 +82,14 @@ export function Sidebar({
         <CardContent className="space-y-4">
           <div className="space-y-2">
             <label htmlFor="topic" className="text-sm font-medium">
-              Enter a topic (up to 90 characters)
+              Enter a topic
             </label>
             <div className="relative">
               <Input
                 id="topic"
                 value={topic}
                 onChange={handleInputChange}
+                onKeyDown={handleKeyDown}
                 placeholder="e.g., how to budget"
                 maxLength={MAX_CHARS}
                 style={{ fontSize: "16px" }} // Add explicit font size to prevent zoom
@@ -98,14 +107,14 @@ export function Sidebar({
 
           <div className="space-y-2">
             <p className="text-sm font-medium">Example topics:</p>
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-1 gap-2">
               {exampleTopics.map((exampleTopic) => (
                 <Button
                   key={exampleTopic}
                   variant="outline"
                   size="sm"
                   onClick={() => onExampleTopic(exampleTopic)}
-                  className="text-xs px-2 py-1 h-auto min-h-[2.5rem] justify-center text-center"
+                  className="text-xs px-3 py-2 h-auto min-h-[3rem] justify-center text-center whitespace-normal"
                 >
                   {exampleTopic}
                 </Button>

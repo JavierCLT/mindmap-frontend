@@ -168,7 +168,7 @@ export function renderMindmap(container: HTMLElement, data: MindmapNode, options
 
   // Increase horizontal spacing between levels
   // Use larger spacing on mobile for better visibility
-  const horizontalSpacing = options.isMobile ? 200 : 220 // Increased spacing on mobile for better separation
+  const horizontalSpacing = options.isMobile ? 240 : 260 // Increased spacing for better separation
 
   if (options.layout === "bi" && rootNode.children && rootNode.children.length > 0) {
     // Create a copy of the root node for processing
@@ -196,23 +196,23 @@ export function renderMindmap(container: HTMLElement, data: MindmapNode, options
         if (a.depth === 2 || b.depth === 2) {
           // Increase spacing for depth 2 nodes that have children
           if (aHasDeepChildren || bHasDeepChildren) {
-            return a.parent === b.parent ? (options.isMobile ? 2.8 : 2.2) : options.isMobile ? 3.0 : 2.5
+            return a.parent === b.parent ? (options.isMobile ? 3.2 : 2.6) : options.isMobile ? 3.4 : 2.9
           }
           // Use standard spacing for depth 2 nodes without children
-          return a.parent === b.parent ? (options.isMobile ? 2.0 : 1.5) : options.isMobile ? 2.3 : 1.8
+          return a.parent === b.parent ? (options.isMobile ? 2.4 : 1.9) : options.isMobile ? 2.7 : 2.2
         }
         if (a.depth === 3 || b.depth === 3) {
           // Similar spacing for depth 3 nodes as we use for depth 2
           if (aHasDeepChildren || bHasDeepChildren) {
-            return a.parent === b.parent ? (options.isMobile ? 2.5 : 2.0) : options.isMobile ? 2.8 : 2.3
+            return a.parent === b.parent ? (options.isMobile ? 2.9 : 2.4) : options.isMobile ? 3.2 : 2.7
           }
-          return a.parent === b.parent ? (options.isMobile ? 1.8 : 1.3) : options.isMobile ? 2.0 : 1.6
+          return a.parent === b.parent ? (options.isMobile ? 2.2 : 1.7) : options.isMobile ? 2.4 : 2.0
         }
         if (a.depth > baseRectangleCutoffDepth || b.depth > baseRectangleCutoffDepth) {
-          return a.parent === b.parent ? (options.isMobile ? 1.5 : 1.0) : options.isMobile ? 1.7 : 1.2
+          return a.parent === b.parent ? (options.isMobile ? 1.9 : 1.4) : options.isMobile ? 2.1 : 1.6
         }
         // Default separation for other nodes
-        return a.parent === b.parent ? (options.isMobile ? 1.8 : 1.2) : options.isMobile ? 2.0 : 1.5
+        return a.parent === b.parent ? (options.isMobile ? 2.2 : 1.6) : options.isMobile ? 2.4 : 1.9
       })
 
     // Apply layouts
@@ -261,23 +261,23 @@ export function renderMindmap(container: HTMLElement, data: MindmapNode, options
         if (a.depth === 2 || b.depth === 2) {
           // Increase spacing for depth 2 nodes that have children
           if (aHasDeepChildren || bHasDeepChildren) {
-            return a.parent === b.parent ? (options.isMobile ? 2.8 : 2.2) : options.isMobile ? 3.0 : 2.5
+            return a.parent === b.parent ? (options.isMobile ? 3.2 : 2.6) : options.isMobile ? 3.4 : 2.9
           }
           // Use standard spacing for depth 2 nodes without children
-          return a.parent === b.parent ? (options.isMobile ? 2.0 : 1.5) : options.iMobile ? 2.3 : 1.8
+          return a.parent === b.parent ? (options.isMobile ? 2.4 : 1.9) : options.isMobile ? 2.7 : 2.2
         }
         if (a.depth === 3 || b.depth === 3) {
           // Similar spacing for depth 3 nodes as we use for depth 2
           if (aHasDeepChildren || bHasDeepChildren) {
-            return a.parent === b.parent ? (options.isMobile ? 2.5 : 2.0) : options.iMobile ? 2.8 : 2.3
+            return a.parent === b.parent ? (options.isMobile ? 2.9 : 2.4) : options.isMobile ? 3.2 : 2.7
           }
-          return a.parent === b.parent ? (options.isMobile ? 1.8 : 1.3) : options.iMobile ? 2.0 : 1.6
+          return a.parent === b.parent ? (options.isMobile ? 2.2 : 1.7) : options.isMobile ? 2.4 : 2.0
         }
         if (a.depth > baseRectangleCutoffDepth || b.depth > baseRectangleCutoffDepth) {
-          return a.parent === b.parent ? (options.isMobile ? 1.5 : 1.0) : options.iMobile ? 1.7 : 1.2
+          return a.parent === b.parent ? (options.isMobile ? 1.9 : 1.4) : options.isMobile ? 2.1 : 1.6
         }
         // Default separation for other nodes
-        return a.parent === b.parent ? (options.isMobile ? 1.8 : 1.2) : options.iMobile ? 2.0 : 1.5
+        return a.parent === b.parent ? (options.isMobile ? 2.2 : 1.6) : options.isMobile ? 2.4 : 1.9
       })
 
     rootNodeProcessed = treeLayout(rootNode)
@@ -347,8 +347,8 @@ export function renderMindmap(container: HTMLElement, data: MindmapNode, options
       const y = text.attr("y") || "0"
       const dy = Number.parseFloat(text.attr("dy") || "0")
 
-      // IMPORTANT: Use a fixed character width approximation for more stable wrapping
-      const avgCharWidth = 6.5 // Average character width in pixels (approximation)
+      // Use a more accurate character width approximation
+      const avgCharWidth = 6.2 // Average character width in pixels (approximation)
 
       let line: string[] = []
       let lineNumber = 0
@@ -425,21 +425,21 @@ export function renderMindmap(container: HTMLElement, data: MindmapNode, options
   // Define max widths for different node types with adaptive sizing
   // Use larger text boxes on mobile
   const maxWidths = {
-    title: options.isMobile ? 220 : 180, // Root node (depth 0)
-    mainBranch: options.isMobile ? 200 : 160, // First level (depth 1) - Increased for mobile
+    title: options.isMobile ? 240 : 200, // Root node (depth 0)
+    mainBranch: options.isMobile ? 220 : 180, // First level (depth 1) - Increased for mobile
     subBranch: (d: d3.HierarchyPointNode<MindmapNode>) => {
       // Allow longer text for depth 2 nodes that don't have children
       if (d.depth === 2 && (!d.children || d.children.length === 0)) {
-        return options.isMobile ? 200 : 160 // Wider boxes for childless depth 2 nodes
+        return options.isMobile ? 220 : 180 // Wider boxes for childless depth 2 nodes
       }
-      return options.isMobile ? 160 : 120 // Standard width for depth 2 nodes with children
+      return options.isMobile ? 180 : 140 // Standard width for depth 2 nodes with children
     },
     depth3Branch: (d: d3.HierarchyPointNode<MindmapNode>) => {
       // Allow longer text for depth 3 nodes that don't have children
       if (d.depth === 3 && (!d.children || d.children.length === 0)) {
-        return options.isMobile ? 180 : 140 // Wider boxes for childless depth 3 nodes
+        return options.isMobile ? 200 : 160 // Wider boxes for childless depth 3 nodes
       }
-      return options.isMobile ? 140 : 100 // Standard width for depth 3 nodes with children
+      return options.isMobile ? 160 : 120 // Standard width for depth 3 nodes with children
     },
   }
 
@@ -584,35 +584,35 @@ export function renderMindmap(container: HTMLElement, data: MindmapNode, options
         horizontal:
           d.depth === 0
             ? options.isMobile
-              ? 24
-              : 20
+              ? 28
+              : 24
             : d.depth === 1
               ? options.isMobile
-                ? 20
-                : 15
+                ? 24
+                : 20
               : d.depth === 2
                 ? options.isMobile
-                  ? 14
-                  : 10
+                  ? 18
+                  : 14
                 : options.isMobile
-                  ? 12
-                  : 8,
+                  ? 16
+                  : 12,
         vertical:
           d.depth === 0
             ? options.isMobile
-              ? 12
-              : 10
+              ? 16
+              : 14
             : d.depth === 1
               ? options.isMobile
-                ? 10
-                : 8
+                ? 14
+                : 12
               : d.depth === 2
                 ? options.isMobile
-                  ? 8
-                  : 6
+                  ? 12
+                  : 10
                 : options.isMobile
-                  ? 6
-                  : 4,
+                  ? 10
+                  : 8,
       }
 
       // Calculate dimensions
