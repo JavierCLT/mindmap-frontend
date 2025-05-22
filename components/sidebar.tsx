@@ -74,7 +74,7 @@ export function Sidebar({
         <CardContent className="space-y-4">
           <div className="space-y-2">
             <label htmlFor="topic" className="text-sm font-medium">
-              Enter a topic (up to 90-char.)
+              Enter a topic (up to 90 characters)
             </label>
             <div className="relative">
               <Input
