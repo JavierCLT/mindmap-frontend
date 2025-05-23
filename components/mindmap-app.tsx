@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from "react"
 import { Header } from "./header"
 import { Sidebar } from "./sidebar"
+import { DetailSidebar } from "./detail-sidebar"
 import { LoadingSpinner } from "./loading-spinner"
 import { MobileInput } from "./mobile-input"
 import { generateMindmapMarkdown } from "../lib/generate-mindmap"
@@ -34,6 +35,10 @@ export const MindmapApp = () => {
   const zoomRef = useRef<any>(null)
   const lastThemeRef = useRef<string | undefined>(undefined) // Track the last theme to detect changes
 
+  // State for detail sidebar
+  const [isDetailSidebarOpen, setIsDetailSidebarOpen] = useState(false)
+  const [selectedNode, setSelectedNode] = useState<{ id: string; name: string; depth: number } | null>(null)
+
   // Handle mounted state to avoid hydration mismatch
   useEffect(() => {
     setMounted(true)
@@ -44,6 +49,13 @@ export const MindmapApp = () => {
     console.log("Toggle sidebar called, current state:", isSidebarOpen)
     setIsSidebarOpen((prev) => !prev)
   }, [isSidebarOpen])
+
+  // Handle node click for detail sidebar
+  const handleNodeClick = useCallback((nodeId: string, nodeName: string, depth: number) => {
+    console.log("Node clicked in app:", nodeId, nodeName, depth)
+    setSelectedNode({ id: nodeId, name: nodeName, depth })
+    setIsDetailSidebarOpen(true)
+  }, [])
 
   // Update the renderMindmapWithTransform function to be more stable:
   const renderMindmapWithTransform = useCallback(() => {
@@ -66,6 +78,7 @@ export const MindmapApp = () => {
         preserveTransform,
         theme: currentTheme,
         isMobile, // Pass isMobile flag to renderer
+        onNodeClick: handleNodeClick, // Pass the node click handler
       })
 
       // Store the zoom behavior for later use
@@ -87,7 +100,7 @@ export const MindmapApp = () => {
         variant: "destructive",
       })
     }
-  }, [markdown, layout, colorScheme, resolvedTheme, mounted, toast, isMobile])
+  }, [markdown, layout, colorScheme, resolvedTheme, mounted, toast, isMobile, handleNodeClick])
 
   // Update the setLayoutWithTransform function to be more stable:
   const setLayoutWithTransform = useCallback(
@@ -888,6 +901,12 @@ export const MindmapApp = () => {
     setTopic(newTopic)
   }, [])
 
+  // Handle closing the detail sidebar
+  const handleCloseDetailSidebar = useCallback(() => {
+    setIsDetailSidebarOpen(false)
+    setSelectedNode(null)
+  }, [])
+
   // Don't render until client-side to avoid hydration mismatch
   if (!mounted) {
     return null
@@ -933,6 +952,17 @@ export const MindmapApp = () => {
             </div>
           )}
         </div>
+
+        {/* Detail sidebar for node explanations */}
+        {isDetailSidebarOpen && (
+          <DetailSidebar
+            isOpen={isDetailSidebarOpen}
+            onClose={handleCloseDetailSidebar}
+            nodeId={selectedNode?.id || null}
+            nodeName={selectedNode?.name || null}
+            topic={topic}
+          />
+        )}
       </div>
 
       {/* Mobile-only fixed input at bottom of screen */}

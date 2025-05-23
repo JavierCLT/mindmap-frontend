@@ -125,6 +125,49 @@
   font-weight: bold;
 }
 
+/* Clickable node styles */
+.mindmap-node.clickable .mindmap-node-circle.clickable-circle {
+  cursor: pointer;
+  stroke-width: 2px;
+  stroke-opacity: 0.5;
+  filter: drop-shadow(0 0 1px rgba(255, 255, 255, 0.3));
+  transition: all 0.2s ease;
+}
+
+.mindmap-node.clickable:hover .mindmap-node-circle.clickable-circle {
+  r: 7;
+  stroke-opacity: 1;
+  filter: drop-shadow(0 0 3px rgba(255, 255, 255, 0.7));
+  animation: pulse 1.5s infinite;
+}
+
+.mindmap-node.clickable .mindmap-node-text.clickable-text {
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.mindmap-node.clickable:hover .mindmap-node-text.clickable-text {
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  filter: drop-shadow(0 0 1px rgba(255, 255, 255, 0.5));
+}
+
+@keyframes pulse {
+  0% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.1);
+    opacity: 0.8;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
 @layer utilities {
   @media (max-width: 768px) {
     .mobile-container {
