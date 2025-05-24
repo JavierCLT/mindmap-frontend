@@ -19,7 +19,7 @@ export const MindmapApp = () => {
   const [topic, setTopic] = useState("")
   const [isGenerating, setIsGenerating] = useState(false)
   const isMobileCheck = useMobile()
-  const [layout, setLayout] = useState<"right" | "bi">(isMobileCheck ? "right" : "bi") // Default to right on mobile
+  const [layout, setLayout] = useState<"right" | "bi">(isMobileCheck ? "bi" : "bi") // Default to bi on both mobile and desktop
   const [colorScheme, setColorScheme] = useState<"default" | "vibrant" | "summer" | "monochrome">("default")
   const [isSidebarOpen, setIsSidebarOpen] = useState(true)
   const [isSettingsOpen, setIsSettingsOpen] = useState(false)
@@ -167,7 +167,7 @@ export const MindmapApp = () => {
   // Update layout when switching between mobile and desktop for default mindmap
   useEffect(() => {
     if (isDefaultMindmap) {
-      setLayout(isMobile ? "right" : "bi")
+      setLayout("bi") // Always use bidirectional for default mindmap
     }
   }, [isMobile, isDefaultMindmap])
 
@@ -899,7 +899,9 @@ export const MindmapApp = () => {
       <div className="flex flex-1 overflow-hidden h-[calc(100vh-3.5rem)]">
         <div
           ref={sidebarRef}
-          className={`z-30 md:z-auto transition-all duration-300 ${isSidebarOpen ? "w-full md:w-80" : "w-0 overflow-hidden"}`}
+          className={`z-30 md:z-auto transition-all duration-300 ${
+            isSidebarOpen ? "w-screen md:w-80" : "w-0 overflow-hidden"
+          }`}
         >
           <Sidebar
             topic={topic}

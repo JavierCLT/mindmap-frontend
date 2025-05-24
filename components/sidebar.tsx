@@ -74,7 +74,7 @@ export function Sidebar({
   }
 
   return (
-    <div className="w-80 min-w-[20rem] border-r border-border bg-card p-4 overflow-y-auto h-full">
+    <div className="w-full min-w-0 border-r border-border bg-card p-4 overflow-y-auto h-full">
       <Card className="mb-4">
         <CardHeader className="pb-2">
           <CardTitle className="text-sm">Generate a Mind Map</CardTitle>
