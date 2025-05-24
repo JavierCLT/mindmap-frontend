@@ -19,13 +19,12 @@ export const MindmapApp = () => {
   const [topic, setTopic] = useState("")
   const [isGenerating, setIsGenerating] = useState(false)
   const isMobileCheck = useMobile()
-  const [layout, setLayout] = useState<"right" | "bi">(isMobileCheck ? "bi" : "bi") // Default to bidirectional on both mobile and desktop
+  const [layout, setLayout] = useState<"right" | "bi">(isMobileCheck ? "right" : "bi") // Default to right on mobile
   const [colorScheme, setColorScheme] = useState<"default" | "vibrant" | "summer" | "monochrome">("default")
   const [isSidebarOpen, setIsSidebarOpen] = useState(true)
   const [isSettingsOpen, setIsSettingsOpen] = useState(false)
   const [mounted, setMounted] = useState(false)
   const [isDefaultMindmap, setIsDefaultMindmap] = useState(true) // Track if we're showing the default mindmap
-  const [hasGeneratedMindmap, setHasGeneratedMindmap] = useState(false) // Track if user has generated any mindmap
   const mindmapRef = useRef<HTMLDivElement>(null)
   const sidebarRef = useRef<HTMLDivElement>(null)
   const { toast } = useToast()
@@ -130,11 +129,6 @@ export const MindmapApp = () => {
   useEffect(() => {
     if (!mindmapRef.current || !mounted) return
 
-    // On mobile, don't render the default mindmap until user generates one
-    if (isMobile && isDefaultMindmap && !hasGeneratedMindmap) {
-      return
-    }
-
     renderMindmapWithTransform()
 
     return () => {
@@ -143,42 +137,37 @@ export const MindmapApp = () => {
         mindmapRef.current.innerHTML = ""
       }
     }
-  }, [
-    markdown,
-    layout,
-    colorScheme,
-    resolvedTheme,
-    mounted,
-    renderMindmapWithTransform,
-    isMobile,
-    isDefaultMindmap,
-    hasGeneratedMindmap,
-  ])
+  }, [markdown, layout, colorScheme, resolvedTheme, mounted, renderMindmapWithTransform])
 
-  // Handle mobile view - keep sidebar open by default on mobile
+  // Update this effect in mindmap-app.tsx
+  // Handle mobile view
   useEffect(() => {
     if (isMobile) {
-      // On mobile, keep sidebar open by default for better UX
-      setIsSidebarOpen(true)
+      // On mobile, only set sidebar closed on initial load, not on every render
+      if (!mounted) {
+        setIsSidebarOpen(false)
+      }
       // Reset transform when switching to mobile to ensure proper centering
       currentTransformRef.current = null
     } else {
-      // On desktop, keep sidebar open
-      setIsSidebarOpen(true)
+      // On desktop, only set sidebar open on initial load or when switching from mobile
+      if (!mounted) {
+        setIsSidebarOpen(true)
+      }
       // Reset transform when switching to desktop to ensure proper centering
       currentTransformRef.current = null
     }
 
-    // Re-render the mindmap with the new transform (only if we have generated a mindmap)
-    if (mounted && mindmapRef.current && (!isMobile || hasGeneratedMindmap)) {
+    // Re-render the mindmap with the new transform
+    if (mounted && mindmapRef.current) {
       renderMindmapWithTransform()
     }
-  }, [isMobile, mounted, renderMindmapWithTransform, hasGeneratedMindmap])
+  }, [isMobile, mounted, renderMindmapWithTransform])
 
   // Update layout when switching between mobile and desktop for default mindmap
   useEffect(() => {
     if (isDefaultMindmap) {
-      setLayout("bi") // Always use bidirectional for better visual appeal
+      setLayout(isMobile ? "right" : "bi")
     }
   }, [isMobile, isDefaultMindmap])
 
@@ -188,7 +177,7 @@ export const MindmapApp = () => {
 
     const handleResize = () => {
       // Use a debounce to avoid too many re-renders
-      if (mindmapRef.current && (!isMobile || hasGeneratedMindmap)) {
+      if (mindmapRef.current) {
         // Reset transform on resize to ensure proper centering
         if (isDefaultMindmap) {
           currentTransformRef.current = null
@@ -209,17 +198,7 @@ export const MindmapApp = () => {
       window.removeEventListener("resize", debouncedResize)
       clearTimeout(resizeTimer)
     }
-  }, [
-    markdown,
-    layout,
-    colorScheme,
-    resolvedTheme,
-    mounted,
-    renderMindmapWithTransform,
-    isDefaultMindmap,
-    isMobile,
-    hasGeneratedMindmap,
-  ])
+  }, [markdown, layout, colorScheme, resolvedTheme, mounted, renderMindmapWithTransform, isDefaultMindmap])
 
   // Handle theme change - UPDATED to preserve transform
   useEffect(() => {
@@ -230,19 +209,17 @@ export const MindmapApp = () => {
       // Store the current transform before theme change
       const currentTransform = currentTransformRef.current
 
-      // Re-render when theme changes to apply correct styles (only if we have generated a mindmap on mobile)
-      if (!isMobile || hasGeneratedMindmap) {
-        renderMindmapWithTransform()
-      }
+      // Re-render when theme changes to apply correct styles
+      renderMindmapWithTransform()
 
       // Update the last theme reference
       lastThemeRef.current = resolvedTheme as string
     }
-  }, [theme, resolvedTheme, mounted, renderMindmapWithTransform, isMobile, hasGeneratedMindmap])
+  }, [theme, resolvedTheme, mounted, renderMindmapWithTransform])
 
-  // Handle click outside sidebar to close it on mobile (only after generating a mindmap)
+  // Handle click outside sidebar to close it on mobile
   useEffect(() => {
-    if (!mounted || !isMobile || !hasGeneratedMindmap) return
+    if (!mounted || !isMobile) return
 
     const handleClickOutside = (event: MouseEvent) => {
       if (
@@ -262,7 +239,7 @@ export const MindmapApp = () => {
       document.removeEventListener("mousedown", handleClickOutside)
       document.removeEventListener("touchstart", handleClickOutside)
     }
-  }, [isSidebarOpen, isMobile, mounted, hasGeneratedMindmap])
+  }, [isSidebarOpen, isMobile, mounted])
 
   // Update the handleGenerateMindmap function to better preserve transform:
   const handleGenerateMindmap = async () => {
@@ -288,7 +265,7 @@ export const MindmapApp = () => {
 
     setIsGenerating(true)
 
-    // On mobile, close sidebar after generating to show the mindmap
+    // Close sidebar on mobile after generating
     if (isMobile) {
       setIsSidebarOpen(false)
     }
@@ -307,7 +284,6 @@ export const MindmapApp = () => {
       // Update the markdown
       setMarkdown(generatedMarkdown)
       setIsDefaultMindmap(false) // Mark that we're no longer showing the default mindmap
-      setHasGeneratedMindmap(true) // Mark that user has generated a mindmap
 
       toast({
         title: "Mind map generated",
@@ -322,10 +298,8 @@ export const MindmapApp = () => {
         variant: "destructive",
       })
 
-      // If there was an error, re-render the previous mindmap (only if we have one)
-      if (hasGeneratedMindmap) {
-        renderMindmapWithTransform()
-      }
+      // If there was an error, re-render the previous mindmap
+      renderMindmapWithTransform()
     } finally {
       setIsGenerating(false)
     }
@@ -885,7 +859,6 @@ export const MindmapApp = () => {
           // Update the markdown
           setMarkdown(generatedMarkdown)
           setIsDefaultMindmap(false) // Mark that we're no longer showing the default mindmap
-          setHasGeneratedMindmap(true) // Mark that user has generated a mindmap
 
           toast({
             title: "Mind map generated",
@@ -901,10 +874,8 @@ export const MindmapApp = () => {
             variant: "destructive",
           })
 
-          // If there was an error, re-render the previous mindmap (only if we have one)
-          if (hasGeneratedMindmap) {
-            renderMindmapWithTransform()
-          }
+          // If there was an error, re-render the previous mindmap
+          renderMindmapWithTransform()
         })
         .finally(() => {
           setIsGenerating(false)
@@ -928,9 +899,7 @@ export const MindmapApp = () => {
       <div className="flex flex-1 overflow-hidden h-[calc(100vh-3.5rem)]">
         <div
           ref={sidebarRef}
-          className={`z-30 md:z-auto transition-all duration-300 ${
-            isSidebarOpen ? "w-full md:w-80" : "w-0 overflow-hidden"
-          }`}
+          className={`z-30 md:z-auto transition-all duration-300 ${isSidebarOpen ? "w-80" : "w-0 overflow-hidden"}`}
         >
           <Sidebar
             topic={topic}
@@ -947,26 +916,12 @@ export const MindmapApp = () => {
           />
         </div>
         <div className="flex-1 relative overflow-hidden">
-          {/* Show mindmap area only if we have generated one or we're on desktop */}
-          {(!isMobile || hasGeneratedMindmap) && (
-            <div
-              ref={mindmapRef}
-              className="w-full h-full overflow-hidden md:pb-0 pb-16 border-b border-primary/30 dark:border-primary/40"
-              tabIndex={0}
-            />
-          )}
-
-          {/* Show welcome message on mobile when no mindmap has been generated */}
-          {isMobile && !hasGeneratedMindmap && !isGenerating && (
-            <div className="flex items-center justify-center h-full p-8">
-              <div className="text-center space-y-4">
-                <h2 className="text-2xl font-bold text-primary">Welcome to Mind Map Maker</h2>
-                <p className="text-muted-foreground">
-                  Enter a topic in the sidebar to generate your first AI-powered mind map!
-                </p>
-              </div>
-            </div>
-          )}
+          {/* Add padding-bottom on mobile to make room for the fixed input */}
+          <div
+            ref={mindmapRef}
+            className="w-full h-full overflow-hidden md:pb-0 pb-16 border-b border-primary/30 dark:border-primary/40"
+            tabIndex={0}
+          />
 
           {/* Loading spinner overlay */}
           {isGenerating && (
@@ -980,8 +935,8 @@ export const MindmapApp = () => {
         </div>
       </div>
 
-      {/* Mobile-only fixed input at bottom of screen - only show if mindmap has been generated */}
-      {isMobile && hasGeneratedMindmap && (
+      {/* Mobile-only fixed input at bottom of screen */}
+      {isMobile && (
         <MobileInput
           topic={topic}
           setTopic={handleTopicChange}
