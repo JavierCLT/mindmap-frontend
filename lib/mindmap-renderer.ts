@@ -19,7 +19,6 @@ interface RenderOptions {
   theme?: "dark" | "light" // Current theme
   forExport?: boolean // Special flag for export mode
   isMobile?: boolean // Flag for mobile view
-  onNodeClick?: (nodeId: string, nodeName: string, depth: number) => void // Callback for node clicks
 }
 
 // Update the COLOR_SCHEMES object with the new color palettes
@@ -326,19 +325,10 @@ export function renderMindmap(container: HTMLElement, data: MindmapNode, options
     .data(allNodes)
     .enter()
     .append("g")
-    .attr("class", (d) => `mindmap-node depth-${d.depth} ${d.depth >= 4 ? "clickable" : ""}`)
+    .attr("class", "mindmap-node")
     .attr("data-depth", (d) => d.depth)
     .attr("data-id", (d) => d.data.id)
     .attr("transform", (d) => `translate(${d.y},${d.x})`)
-    .style("cursor", (d) => (d.depth >= 4 && options.onNodeClick ? "pointer" : "default"))
-    .on("click", (event, d) => {
-      // Only handle clicks for depth 4+ nodes and if onNodeClick is provided
-      if (d.depth >= 4 && options.onNodeClick && !options.forExport) {
-        event.stopPropagation() // Prevent the click from triggering zoom
-        console.log("Node clicked:", d.data.id, d.data.name, d.depth)
-        options.onNodeClick(d.data.id, d.data.name, d.depth)
-      }
-    })
 
   // Helper function to get text width
   function textWidth(text: string): number {
@@ -482,19 +472,17 @@ export function renderMindmap(container: HTMLElement, data: MindmapNode, options
   nodes
     .filter((d) => !shouldHaveRectangle(d))
     .append("circle")
-    .attr("class", (d) => `mindmap-node-circle ${d.depth >= 4 ? "clickable-circle" : ""}`)
-    .attr("r", (d) => (d.depth >= 4 && options.onNodeClick ? (options.isMobile ? 6 : 5) : options.isMobile ? 5 : 4)) // Larger circles for clickable nodes
+    .attr("class", "mindmap-node-circle")
+    .attr("r", options.isMobile ? 5 : 4) // Slightly larger circles on mobile
     .attr("cx", 0)
     .attr("cy", 0)
     .attr("fill", getNodeColor)
-    .attr("stroke", (d) => (d.depth >= 4 && options.onNodeClick ? "#ffffff" : "none")) // Add stroke for clickable nodes
-    .attr("stroke-opacity", (d) => (d.depth >= 4 && options.onNodeClick ? 0.3 : 0)) // Subtle stroke for clickable nodes
-    .attr("stroke-width", (d) => (d.depth >= 4 && options.onNodeClick ? 1.5 : 0)) // Stroke width for clickable nodes
+    .attr("stroke", "none") // No stroke in markmap style
 
   // Add text labels with level-specific positioning
   const nodeTexts = nodes
     .append("text")
-    .attr("class", (d) => `mindmap-node-text depth-${d.depth} ${d.depth >= 4 ? "clickable-text" : ""}`)
+    .attr("class", (d) => `mindmap-node-text depth-${d.depth}`)
     .attr("dy", "0.3em")
     .attr("x", (d) => {
       // Level-specific horizontal positioning
