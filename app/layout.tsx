@@ -31,9 +31,9 @@ export const metadata: Metadata = {
     siteName: "Mind Map Maker",
     images: [
       {
-        url: "/favicon.png",
-        width: 64,
-        height: 64,
+        url: "/icon-512.png",
+        width: 512,
+        height: 512,
         alt: "Mind Map Maker",
       },
     ],
@@ -45,7 +45,7 @@ export const metadata: Metadata = {
     title: "Mind Map Maker - Create Interactive Mind Maps",
     description:
       "Create beautiful, interactive mind maps for learning, brainstorming, and organizing ideas. Free online mind mapping tool.",
-    images: ["/favicon.png"],
+    images: ["/icon-512.png"],
   },
   robots: {
     index: true,
@@ -72,8 +72,21 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
-        <link rel="icon" href="/favicon.png" sizes="64x64" />
+        {/* ICO fallback for older browsers */}
+        <link rel="icon" href="/favicon.png" sizes="any" />
+
+        {/* Modern PNG favicons */}
+        <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
+        <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
+        <link rel="icon" type="image/png" sizes="64x64" href="/favicon.png" />
+
+        {/* Apple Touch Icon */}
         <link rel="apple-touch-icon" href="/apple-touch-icon.png" sizes="180x180" />
+
+        {/* Android/Chrome/PWA */}
+        <link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png" />
+        <link rel="icon" type="image/png" sizes="512x512" href="/icon-512.png" />
+
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <meta name="theme-color" content="#3b82f6" />
       </head>
