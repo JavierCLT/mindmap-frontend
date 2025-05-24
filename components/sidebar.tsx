@@ -114,7 +114,7 @@ export function Sidebar({
                   variant="outline"
                   size="sm"
                   onClick={() => onExampleTopic(exampleTopic)}
-                  className="text-xs px-3 py-1.5 h-auto min-h-[2.5rem] justify-center text-center whitespace-normal"
+                  className="text-sm md:text-xs px-3 py-1.5 h-auto min-h-[2.5rem] justify-center text-center whitespace-normal"
                 >
                   {exampleTopic}
                 </Button>
@@ -173,7 +173,7 @@ export function Sidebar({
         {/* Color selector - no card wrapper, larger size */}
         <div className="mb-4">
           <Select value={colorScheme} onValueChange={(value) => setColorScheme(value as any)}>
-            <SelectTrigger className="w-full h-12 px-3">
+            <SelectTrigger className="w-full h-12 px-3 text-sm md:text-base">
               <div className="flex items-center justify-center w-full">
                 <SelectValue placeholder="Select a color scheme" />
               </div>
