@@ -290,9 +290,7 @@ export const MindmapApp = () => {
 
     // On mobile, close sidebar after generating to show the mindmap
     if (isMobile) {
-      setTimeout(() => {
-        setIsSidebarOpen(false)
-      }, 500) // Small delay to let user see the generation started
+      setIsSidebarOpen(false)
     }
 
     // Clear the current mindmap to show the loading spinner
@@ -872,11 +870,9 @@ export const MindmapApp = () => {
       // Create a new function that doesn't depend on the topic state
       setIsGenerating(true)
 
-      // On mobile, close sidebar after generating to show the mindmap
+      // Close sidebar on mobile after generating
       if (isMobile) {
-        setTimeout(() => {
-          setIsSidebarOpen(false)
-        }, 500) // Small delay to let user see the generation started
+        setIsSidebarOpen(false)
       }
 
       // Clear the current mindmap to show the loading spinner
@@ -932,7 +928,9 @@ export const MindmapApp = () => {
       <div className="flex flex-1 overflow-hidden h-[calc(100vh-3.5rem)]">
         <div
           ref={sidebarRef}
-          className={`z-30 md:z-auto transition-all duration-300 ${isSidebarOpen ? "w-80" : "w-0 overflow-hidden"}`}
+          className={`z-30 md:z-auto transition-all duration-300 ${
+            isSidebarOpen ? "w-full md:w-80" : "w-0 overflow-hidden"
+          }`}
         >
           <Sidebar
             topic={topic}
