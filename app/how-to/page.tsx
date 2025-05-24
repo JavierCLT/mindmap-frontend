@@ -17,8 +17,8 @@ export default function HowToPage() {
       <Header toggleSidebar={toggleSidebar} isSidebarOpen={isSidebarOpen} />
       <main className="container mx-auto px-4 py-8 max-w-4xl">
         <div className="mb-8">
-          <h1 className="text-4xl font-bold text-foreground mb-4">How to Use This AI Mind Map Generator</h1>
-          <p className="text-xl text-muted-foreground">
+          <h1 className="text-2xl md:text-4xl font-bold text-foreground mb-4">How to Use This AI Mind Map Generator</h1>
+          <p className="text-lg md:text-xl text-muted-foreground">
             Create professional mind maps instantly with AI. Just enter your topic and let our AI do the work.
           </p>
         </div>

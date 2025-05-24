@@ -180,10 +180,9 @@ export default function ExamplesPage() {
       <Header toggleSidebar={toggleSidebar} isSidebarOpen={isSidebarOpen} />
       <main className="container mx-auto px-4 py-8 max-w-6xl">
         <div className="mb-8">
-          <h1 className="text-4xl font-bold text-foreground mb-4">Use Case Examples</h1>
-          <p className="text-xl text-muted-foreground">
-            Explore real-world mind map examples. Click on any image to view it in detail with zoom and pan
-            capabilities.
+          <h1 className="text-2xl md:text-4xl font-bold text-foreground mb-4">Use Case Examples</h1>
+          <p className="text-lg md:text-xl text-muted-foreground">
+            Click on any image to view it in detail. Generate your own ones in seconds.
           </p>
         </div>
 
