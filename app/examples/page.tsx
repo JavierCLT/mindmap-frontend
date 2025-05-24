@@ -83,6 +83,69 @@ export default function ExamplesPage() {
       category: "Health",
       tags: ["Nutrition", "Health", "Science"],
     },
+    {
+      title: "Smart Seasonal Tips to Save Money",
+      description:
+        "Year-round money-saving strategies organized by seasons, covering heating, shopping, travel, and financial planning.",
+      image: "/examples/smart-seasonal-tips-save-money.png",
+      category: "Education",
+      tags: ["Finance", "Seasonal", "Money-Saving"],
+    },
+    {
+      title: "Travel with Kids in the US",
+      description:
+        "Family travel planning guide for both low and high budgets, including destinations, accommodations, and activities.",
+      image: "/examples/travel-with-kids-us-budgets.png",
+      category: "Travel",
+      tags: ["Family Travel", "Budget Planning", "USA"],
+    },
+    {
+      title: "ICE vs Electric Motors Comparison",
+      description:
+        "Technical analysis comparing internal combustion engines and electric motors across efficiency, cost, and performance.",
+      image: "/examples/ice-vs-electric-motors.png",
+      category: "Technology",
+      tags: ["Automotive", "Electric Vehicles", "Engineering"],
+    },
+    {
+      title: "Mastering Self-Discipline and Focus",
+      description:
+        "Comprehensive guide to developing self-discipline, focus techniques, habit building, and overcoming procrastination.",
+      image: "/examples/mastering-self-discipline-focus.png",
+      category: "Self-Development",
+      tags: ["Self-Discipline", "Focus", "Productivity"],
+    },
+    {
+      title: "Biology Branches Overview",
+      description:
+        "Educational overview of major biology disciplines including botany, zoology, genetics, and molecular biology.",
+      image: "/examples/biology-branches.png",
+      category: "Education",
+      tags: ["Biology", "Science", "Academic"],
+    },
+    {
+      title: "Mental Models for Decision-Making",
+      description:
+        "Framework of cognitive tools and models for better decision-making in business and personal contexts.",
+      image: "/examples/mental-models-decision-making.png",
+      category: "Professional",
+      tags: ["Decision Making", "Mental Models", "Strategy"],
+    },
+    {
+      title: "Primary School Preparation Checklist",
+      description: "Complete preparation guide for parents getting their children ready for primary school.",
+      image: "/examples/prep-for-primary-school.png",
+      category: "Education",
+      tags: ["Education", "Parenting", "School Preparation"],
+    },
+    {
+      title: "Bank Interest Rate Policies Impact",
+      description:
+        "Analysis of how interest rate policies affect banks' net income through various direct and indirect channels.",
+      image: "/examples/bank-interest-rate-policies.png",
+      category: "Business",
+      tags: ["Banking", "Interest Rates", "Financial Analysis"],
+    },
   ]
 
   const categories = [
