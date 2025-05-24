@@ -2,12 +2,16 @@
 
 import { useState } from "react"
 import { Header } from "@/components/header"
+import { ImageModal } from "@/components/image-modal"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import Image from "next/image"
 
 export default function ExamplesPage() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
+  const [selectedCategory, setSelectedCategory] = useState("All")
+  const [isModalOpen, setIsModalOpen] = useState(false)
+  const [currentImageIndex, setCurrentImageIndex] = useState(0)
 
   const toggleSidebar = () => {
     setIsSidebarOpen(!isSidebarOpen)
@@ -92,10 +96,21 @@ export default function ExamplesPage() {
     "Health",
     "Self-Development",
   ]
-  const [selectedCategory, setSelectedCategory] = useState("All")
 
   const filteredExamples =
     selectedCategory === "All" ? examples : examples.filter((example) => example.category === selectedCategory)
+
+  // Prepare images for modal
+  const modalImages = filteredExamples.map((example) => ({
+    src: example.image,
+    alt: example.title,
+    title: example.title,
+  }))
+
+  const handleImageClick = (index: number) => {
+    setCurrentImageIndex(index)
+    setIsModalOpen(true)
+  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -104,7 +119,8 @@ export default function ExamplesPage() {
         <div className="mb-8">
           <h1 className="text-4xl font-bold text-foreground mb-4">Use Case Examples</h1>
           <p className="text-xl text-muted-foreground">
-            Explore real-world mind map examples across different domains and use cases.
+            Explore real-world mind map examples. Click on any image to view it in detail with zoom and pan
+            capabilities.
           </p>
         </div>
 
@@ -132,14 +148,22 @@ export default function ExamplesPage() {
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
           {filteredExamples.map((example, index) => (
             <Card key={index} className="overflow-hidden hover:shadow-lg transition-shadow">
-              <div className="aspect-video relative bg-muted">
+              <div
+                className="aspect-video relative bg-muted cursor-pointer group"
+                onClick={() => handleImageClick(index)}
+              >
                 <Image
                   src={example.image || "/placeholder.svg"}
                   alt={example.title}
                   fill
-                  className="object-cover"
+                  className="object-cover group-hover:scale-105 transition-transform duration-300"
                   sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                 />
+                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors duration-300 flex items-center justify-center">
+                  <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-white/90 dark:bg-black/90 px-3 py-1 rounded-full text-sm font-medium">
+                    Click to explore
+                  </div>
+                </div>
               </div>
               <CardHeader>
                 <div className="flex items-start justify-between gap-2">
@@ -182,6 +206,15 @@ export default function ExamplesPage() {
           </a>
         </div>
       </main>
+
+      {/* Image Modal */}
+      <ImageModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        images={modalImages}
+        currentIndex={currentImageIndex}
+        onNavigate={setCurrentImageIndex}
+      />
     </div>
   )
 }

@@ -2,8 +2,8 @@
 
 import { useState } from "react"
 import { Header } from "@/components/header"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { CheckCircle, Lightbulb, Target, Users, Zap, BookOpen } from "lucide-react"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { CheckCircle, Lightbulb, Target, Zap, BookOpen } from "lucide-react"
 
 export default function HowToPage() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
@@ -19,7 +19,7 @@ export default function HowToPage() {
         <div className="mb-8">
           <h1 className="text-4xl font-bold text-foreground mb-4">How to Create Effective Mind Maps</h1>
           <p className="text-xl text-muted-foreground">
-            Learn the art and science of mind mapping to organize your thoughts, boost creativity, and enhance learning.
+            Use mind maps to organize your thoughts, boost creativity, and enhance learning.
           </p>
         </div>
 
@@ -137,40 +137,6 @@ export default function HowToPage() {
             </CardContent>
           </Card>
         </div>
-
-        <Card className="mt-8">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Users className="h-5 w-5 text-primary" />
-              Best Practices for Mind Mapping
-            </CardTitle>
-            <CardDescription>Follow these proven strategies to create more effective mind maps</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="grid gap-4 md:grid-cols-2">
-              <div>
-                <h4 className="font-semibold mb-2 text-green-600">Do:</h4>
-                <ul className="space-y-1 text-sm text-muted-foreground">
-                  <li>• Start with brainstorming before organizing</li>
-                  <li>• Use single words or short phrases</li>
-                  <li>• Review and refine your mind map</li>
-                  <li>• Share and collaborate with others</li>
-                  <li>• Use mind maps for different purposes</li>
-                </ul>
-              </div>
-              <div>
-                <h4 className="font-semibold mb-2 text-red-600">Don't:</h4>
-                <ul className="space-y-1 text-sm text-muted-foreground">
-                  <li>• Overcomplicate with too many branches</li>
-                  <li>• Use full sentences or paragraphs</li>
-                  <li>• Make it too dense or cluttered</li>
-                  <li>• Ignore the logical flow of ideas</li>
-                  <li>• Forget to update as ideas evolve</li>
-                </ul>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
 
         <div className="mt-8 p-6 bg-primary/10 rounded-lg">
           <h3 className="text-lg font-semibold mb-2">Ready to Create Your First Mind Map?</h3>

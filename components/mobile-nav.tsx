@@ -7,13 +7,13 @@ export function MobileNav() {
   const pathname = usePathname()
 
   return (
-    <div className="md:hidden border-b border-border bg-background">
-      <nav className="flex px-4 py-2 space-x-6">
+    <div className="md:hidden border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-40">
+      <nav className="flex px-4 py-3 space-x-6">
         <Link
           href="/how-to"
           className={`text-sm font-medium transition-colors ${
             pathname === "/how-to"
-              ? "text-primary border-b-2 border-primary pb-2"
+              ? "text-primary border-b-2 border-primary pb-1"
               : "text-muted-foreground hover:text-foreground"
           }`}
         >
@@ -23,7 +23,7 @@ export function MobileNav() {
           href="/examples"
           className={`text-sm font-medium transition-colors ${
             pathname === "/examples"
-              ? "text-primary border-b-2 border-primary pb-2"
+              ? "text-primary border-b-2 border-primary pb-1"
               : "text-muted-foreground hover:text-foreground"
           }`}
         >
