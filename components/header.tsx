@@ -5,6 +5,7 @@ import { Menu, Info, Network } from "lucide-react"
 import { useState } from "react"
 import { InfoModal } from "./info-modal"
 import { ModeToggle } from "./mode-toggle"
+import Link from "next/link"
 
 interface HeaderProps {
   toggleSidebar: () => void
@@ -31,7 +32,17 @@ export function Header({ toggleSidebar, isSidebarOpen }: HeaderProps) {
         </Button>
         <div className="flex items-center">
           <Network className="mr-2 h-5 w-5 text-primary" />
-          <h1 className="text-xl font-semibold">Mind Map Maker</h1>
+          <Link href="/" className="text-xl font-semibold text-foreground hover:text-primary transition-colors">
+            Mind Map Maker
+          </Link>
+          <nav className="hidden md:flex ml-8 space-x-6">
+            <Link href="/how-to" className="text-sm font-medium text-foreground hover:text-primary transition-colors">
+              How-to Guide
+            </Link>
+            <Link href="/examples" className="text-sm font-medium text-foreground hover:text-primary transition-colors">
+              Use Case Examples
+            </Link>
+          </nav>
         </div>
         <div className="ml-auto flex items-center gap-2">
           <Button variant="ghost" size="icon" onClick={() => setIsInfoModalOpen(true)}>

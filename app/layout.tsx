@@ -2,36 +2,65 @@ import type React from "react"
 import type { Metadata } from "next"
 import { Inter } from "next/font/google"
 import "./globals.css"
-import { ThemeProvider } from "../components/theme-provider"
-import Script from "next/script"
+import { ThemeProvider } from "@/components/theme-provider"
+import { MobileNav } from "@/components/mobile-nav"
 
 const inter = Inter({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
-  title: "Mind Map Maker - AI-Powered Mind Mapping Tool",
+  title: "Mind Map Maker - Create Interactive Mind Maps",
   description:
-    "Create beautiful, organized mind maps instantly with our AI-powered tool. Visualize concepts, brainstorm ideas, and export your mind maps in multiple formats.",
-  keywords: ["mind map", "mind mapping", "AI", "visualization", "brainstorming", "organization", "ideas"],
-  authors: [{ name: "Mind Map Maker Team" }],
-  metadataBase: new URL("https://mind-map-maker.com"),
+    "Create beautiful, interactive mind maps for learning, brainstorming, and organizing ideas. Free online mind mapping tool.",
+  keywords: "mind map, mindmap, brainstorming, learning, organization, visual thinking",
+  authors: [{ name: "Mind Map Maker" }],
+  creator: "Mind Map Maker",
+  publisher: "Mind Map Maker",
+  formatDetection: {
+    email: false,
+    address: false,
+    telephone: false,
+  },
+  metadataBase: new URL("https://www.mind-map-maker.com"),
+  alternates: {
+    canonical: "/",
+  },
   openGraph: {
-    title: "Mind Map Maker - AI-Powered Mind Mapping Tool",
-    description: "Create beautiful, organized mind maps instantly with our AI-powered tool.",
-    url: "https://mind-map-maker.com",
+    title: "Mind Map Maker - Create Interactive Mind Maps",
+    description:
+      "Create beautiful, interactive mind maps for learning, brainstorming, and organizing ideas. Free online mind mapping tool.",
+    url: "https://www.mind-map-maker.com",
     siteName: "Mind Map Maker",
+    images: [
+      {
+        url: "/favicon.png",
+        width: 64,
+        height: 64,
+        alt: "Mind Map Maker",
+      },
+    ],
+    locale: "en_US",
     type: "website",
   },
   twitter: {
-    card: "summary_large_image",
-    title: "Mind Map Maker - AI-Powered Mind Mapping Tool",
-    description: "Create beautiful, organized mind maps instantly with our AI-powered tool.",
+    card: "summary",
+    title: "Mind Map Maker - Create Interactive Mind Maps",
+    description:
+      "Create beautiful, interactive mind maps for learning, brainstorming, and organizing ideas. Free online mind mapping tool.",
+    images: ["/favicon.png"],
   },
-  alternates: {
-    canonical: "https://mind-map-maker.com",
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-video-preview": -1,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+    },
   },
-  icons: {
-    icon: "/favicon.png",
-    apple: "/favicon.png",
+  verification: {
+    google: "your-google-verification-code",
   },
     generator: 'v0.dev'
 }
@@ -44,22 +73,17 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
-        <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
-        <link rel="icon" href="/favicon.png" type="image/png" />
-        <link rel="apple-touch-icon" href="/favicon.png" />
-        <link rel="manifest" href="/manifest.json" />
+        <link rel="icon" href="/favicon.png" sizes="64x64" />
+        <link rel="apple-touch-icon" href="/apple-touch-icon.png" sizes="180x180" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
         <meta name="theme-color" content="#3b82f6" />
-        {/* Plausible Analytics */}
-        <Script
-          defer
-          data-domain="mind-map-maker.com"
-          src="https://plausible.io/js/script.js"
-          strategy="afterInteractive"
-        />
       </head>
       <body className={inter.className}>
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
-          {children}
+          <div className="min-h-screen bg-background text-foreground">
+            <MobileNav />
+            {children}
+          </div>
         </ThemeProvider>
       </body>
     </html>
