@@ -79,7 +79,7 @@ export function Sidebar({
         <CardHeader className="pb-2">
           <CardTitle className="text-sm">Generate a Mind Map</CardTitle>
         </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent className="space-y-3">
           <div className="space-y-2">
             <label htmlFor="topic" className="text-sm font-medium">
               Enter a topic
@@ -114,7 +114,7 @@ export function Sidebar({
                   variant="outline"
                   size="sm"
                   onClick={() => onExampleTopic(exampleTopic)}
-                  className="text-xs px-3 py-2 h-auto min-h-[3rem] justify-center text-center whitespace-normal"
+                  className="text-xs px-3 py-1.5 h-auto min-h-[2.5rem] justify-center text-center whitespace-normal"
                 >
                   {exampleTopic}
                 </Button>
@@ -124,33 +124,66 @@ export function Sidebar({
         </CardContent>
       </Card>
 
-      <Card className="mb-4">
-        <CardContent className="pt-4 space-y-6">
-          <RadioGroup
-            value={layout}
-            onValueChange={(value) => setLayout(value as any)}
-            className="flex justify-between w-full"
+      {/* Mobile-only navigation buttons */}
+      <div className="md:hidden mb-3">
+        <div className="grid grid-cols-2 gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => window.open("/how-to", "_blank")}
+            className="text-sm px-3 py-2 h-auto justify-center text-center"
           >
-            <div className="flex items-center space-x-2">
-              <RadioGroupItem value="right" id="right" />
-              <Label htmlFor="right">Right</Label>
-            </div>
-            <div className="flex items-center space-x-2">
-              <RadioGroupItem value="bi" id="bi" />
-              <Label htmlFor="bi">Bidirectional</Label>
-            </div>
-          </RadioGroup>
+            📚 How-to Guide
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => window.open("/examples", "_blank")}
+            className="text-sm px-3 py-2 h-auto justify-center text-center"
+          >
+            💡 Use Case Examples
+          </Button>
+        </div>
+      </div>
 
+      {/* Settings and Export - moved to bottom for mobile */}
+      <div className="mt-auto">
+        {/* Desktop-only layout selector */}
+        <div className="hidden md:block mb-4">
+          <Card>
+            <CardContent className="pt-4">
+              <RadioGroup
+                value={layout}
+                onValueChange={(value) => setLayout(value as any)}
+                className="flex justify-between w-full"
+              >
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="right" id="right" />
+                  <Label htmlFor="right">Right</Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="bi" id="bi" />
+                  <Label htmlFor="bi">Bidirectional</Label>
+                </div>
+              </RadioGroup>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Color selector - no card wrapper, larger size */}
+        <div className="mb-4">
           <Select value={colorScheme} onValueChange={(value) => setColorScheme(value as any)}>
-            <SelectTrigger className="w-full">
-              <SelectValue placeholder="Select a color scheme" />
+            <SelectTrigger className="w-full h-12 px-3">
+              <div className="flex items-center justify-center w-full">
+                <SelectValue placeholder="Select a color scheme" />
+              </div>
             </SelectTrigger>
             <SelectContent>
               {Object.entries(colorSwatches).map(([scheme, colors]) => (
                 <SelectItem key={scheme} value={scheme}>
-                  <div className="flex items-center">
+                  <div className="flex items-center justify-center w-full">
                     <span className="mr-2">{scheme.charAt(0).toUpperCase() + scheme.slice(1)}</span>
-                    <div className="flex ml-auto">
+                    <div className="flex">
                       {colors.map((color, i) => (
                         <div key={i} className="w-3 h-3 rounded-sm ml-1" style={{ backgroundColor: color }} />
                       ))}
@@ -160,24 +193,24 @@ export function Sidebar({
               ))}
             </SelectContent>
           </Select>
-        </CardContent>
-      </Card>
+        </div>
 
-      <div className="mt-4">
-        <h3 className="mb-2 text-sm font-medium">Export Options:</h3>
-        <div className="grid grid-cols-2 gap-2">
-          <Button
-            variant="outline"
-            onClick={() => onExport("interactive")}
-            className="flex items-center justify-center"
-          >
-            <Download className="mr-2 h-4 w-4" />
-            HTML
-          </Button>
-          <Button variant="outline" onClick={() => onExport("png")} className="flex items-center justify-center">
-            <FileImage className="mr-2 h-4 w-4" />
-            PNG
-          </Button>
+        <div>
+          <h3 className="mb-2 text-sm font-medium">Export Options:</h3>
+          <div className="grid grid-cols-2 gap-2">
+            <Button
+              variant="outline"
+              onClick={() => onExport("interactive")}
+              className="flex items-center justify-center"
+            >
+              <Download className="mr-2 h-4 w-4" />
+              HTML
+            </Button>
+            <Button variant="outline" onClick={() => onExport("png")} className="flex items-center justify-center">
+              <FileImage className="mr-2 h-4 w-4" />
+              PNG
+            </Button>
+          </div>
         </div>
       </div>
     </div>
