@@ -899,7 +899,7 @@ export const MindmapApp = () => {
       <div className="flex flex-1 overflow-hidden h-[calc(100vh-3.5rem)]">
         <div
           ref={sidebarRef}
-          className={`z-30 md:z-auto transition-all duration-300 ${isSidebarOpen ? "w-80" : "w-0 overflow-hidden"}`}
+          className={`z-30 md:z-auto transition-all duration-300 ${isSidebarOpen ? "w-full md:w-80" : "w-0 overflow-hidden"}`}
         >
           <Sidebar
             topic={topic}
