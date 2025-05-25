@@ -1,5 +1,3 @@
-// Updated with better debugging and error handling
-
 export async function generateMindmapMarkdown(
   topic: string,
   depthLevel: "normal" | "detailed" | "ultra" = "normal",
@@ -26,10 +24,13 @@ export async function generateMindmapMarkdown(
     // Construct the full API URL
     const apiUrl = `${backendUrl}/generate-mindmap`
 
-    console.log(`Calling API at: ${apiUrl} with topic: ${topic}`)
+    console.log(`Calling API at: ${apiUrl} with topic: ${topic} and detailLevel: ${depthLevel}`)
 
-    // Create request body
-    const requestBody = JSON.stringify({ topic, depthLevel })
+    // Create request body - FIXED: use 'detailLevel' instead of 'depthLevel'
+    const requestBody = JSON.stringify({ 
+      topic, 
+      detailLevel: depthLevel  // Map depthLevel to detailLevel
+    })
     console.log(`Request body: ${requestBody}`)
 
     // Call the backend API with more detailed logging
@@ -74,7 +75,7 @@ export async function generateMindmapMarkdown(
 
     // Try to parse the response as text first to debug
     const responseText = await response.text()
-    console.log(`Response body: ${responseText.substring(0, 200)}...`)
+    console.log(`Response body preview: ${responseText.substring(0, 200)}...`)
 
     // Then parse as JSON
     let data
@@ -89,6 +90,9 @@ export async function generateMindmapMarkdown(
       console.error("Response doesn't contain markdown:", data)
       throw new Error("Invalid response format: missing markdown field")
     }
+
+    console.log(`Successfully generated ${data.detailLevelName} mindmap with ${data.tokensUsed} tokens`)
+    console.log(`Model used: ${data.model}`)
 
     return data.markdown
   } catch (error) {
