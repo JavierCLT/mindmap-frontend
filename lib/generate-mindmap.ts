@@ -1,6 +1,9 @@
 // Updated with better debugging and error handling
 
-export async function generateMindmapMarkdown(topic: string): Promise<string> {
+export async function generateMindmapMarkdown(
+  topic: string,
+  depthLevel: "normal" | "detailed" | "ultra" = "normal",
+): Promise<string> {
   try {
     // Get the backend URL from environment variable
     let backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL
@@ -26,7 +29,7 @@ export async function generateMindmapMarkdown(topic: string): Promise<string> {
     console.log(`Calling API at: ${apiUrl} with topic: ${topic}`)
 
     // Create request body
-    const requestBody = JSON.stringify({ topic })
+    const requestBody = JSON.stringify({ topic, depthLevel })
     console.log(`Request body: ${requestBody}`)
 
     // Call the backend API with more detailed logging
