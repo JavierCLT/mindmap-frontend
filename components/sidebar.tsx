@@ -19,12 +19,10 @@ interface SidebarProps {
   isGenerating: boolean
   onExampleTopic: (topic: string) => void
   isSettingsOpen: boolean
-  layout: "right" | "bi"
+  layout: "right" | "bi" // Updated to only include right and bi
   setLayout: (layout: "right" | "bi") => void
   colorScheme: "default" | "vibrant" | "summer" | "monochrome"
   setColorScheme: (scheme: "default" | "vibrant" | "summer" | "monochrome") => void
-  depthLevel: "normal" | "detailed" | "ultra"
-  setDepthLevel: (level: "normal" | "detailed" | "ultra") => void
 }
 
 export function Sidebar({
@@ -39,8 +37,6 @@ export function Sidebar({
   setLayout,
   colorScheme,
   setColorScheme,
-  depthLevel,
-  setDepthLevel,
 }: SidebarProps) {
   const MAX_CHARS = 90
   const [charCount, setCharCount] = useState(0)
@@ -54,13 +50,6 @@ export function Sidebar({
     vibrant: ["#EF476F", "#FFD166", "#118AB2", "#06D6A0"],
     summer: ["#70D6FF", "#FF70A6", "#FFD670", "#E9FF70"],
     monochrome: ["#00A6FB", "#0582CA", "#006494", "#003554"],
-  }
-
-  // Depth level descriptions
-  const depthLevels = {
-    normal: "Brief, essential details",
-    detailed: "Comprehensive with good examples",
-    ultra: "Extensive with specific details",
   }
 
   // Update character count when topic changes
@@ -159,25 +148,26 @@ export function Sidebar({
 
       {/* Settings and Export - moved to bottom for mobile */}
       <div className="mt-auto">
-        {/* Depth Level selector */}
-        <div className="mb-4">
-          <Select value={depthLevel} onValueChange={(value) => setDepthLevel(value as any)}>
-            <SelectTrigger className="w-full h-12 px-3 text-sm md:text-base">
-              <div className="flex items-center justify-center w-full">
-                <SelectValue placeholder="Select depth level" />
-              </div>
-            </SelectTrigger>
-            <SelectContent>
-              {Object.entries(depthLevels).map(([level, description]) => (
-                <SelectItem key={level} value={level}>
-                  <div className="flex flex-col items-start w-full">
-                    <span className="font-medium">{level.charAt(0).toUpperCase() + level.slice(1)}</span>
-                    <span className="text-xs text-muted-foreground">{description}</span>
-                  </div>
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+        {/* Desktop-only layout selector */}
+        <div className="hidden md:block mb-4">
+          <Card>
+            <CardContent className="pt-4">
+              <RadioGroup
+                value={layout}
+                onValueChange={(value) => setLayout(value as any)}
+                className="flex justify-between w-full"
+              >
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="right" id="right" />
+                  <Label htmlFor="right">Right</Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="bi" id="bi" />
+                  <Label htmlFor="bi">Bidirectional</Label>
+                </div>
+              </RadioGroup>
+            </CardContent>
+          </Card>
         </div>
 
         {/* Color selector - no card wrapper, larger size */}
@@ -203,28 +193,6 @@ export function Sidebar({
               ))}
             </SelectContent>
           </Select>
-        </div>
-
-        {/* Desktop-only layout selector */}
-        <div className="hidden md:block mb-4">
-          <Card>
-            <CardContent className="pt-4">
-              <RadioGroup
-                value={layout}
-                onValueChange={(value) => setLayout(value as any)}
-                className="flex justify-between w-full"
-              >
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="right" id="right" />
-                  <Label htmlFor="right">Right</Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="bi" id="bi" />
-                  <Label htmlFor="bi">Bidirectional</Label>
-                </div>
-              </RadioGroup>
-            </CardContent>
-          </Card>
         </div>
 
         <div>

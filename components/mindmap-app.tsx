@@ -33,7 +33,6 @@ export const MindmapApp = () => {
   const currentTransformRef = useRef<any>(null)
   const zoomRef = useRef<any>(null)
   const lastThemeRef = useRef<string | undefined>(undefined) // Track the last theme to detect changes
-  const [depthLevel, setDepthLevel] = useState<"normal" | "detailed" | "ultra">("normal")
 
   // Handle mounted state to avoid hydration mismatch
   useEffect(() => {
@@ -280,7 +279,7 @@ export const MindmapApp = () => {
       // Reset transform for new mindmaps
       currentTransformRef.current = null
 
-      const generatedMarkdown = await generateMindmapMarkdown(topic, depthLevel)
+      const generatedMarkdown = await generateMindmapMarkdown(topic)
 
       // Update the markdown
       setMarkdown(generatedMarkdown)
@@ -855,7 +854,7 @@ export const MindmapApp = () => {
         mindmapRef.current.innerHTML = ""
       }
 
-      generateMindmapMarkdown(exampleTopic, depthLevel)
+      generateMindmapMarkdown(exampleTopic)
         .then((generatedMarkdown) => {
           // Update the markdown
           setMarkdown(generatedMarkdown)
@@ -916,8 +915,6 @@ export const MindmapApp = () => {
             setLayout={setLayoutWithTransform}
             colorScheme={colorScheme}
             setColorScheme={setColorSchemeWithTransform}
-            depthLevel={depthLevel}
-            setDepthLevel={setDepthLevel}
           />
         </div>
         <div className="flex-1 relative overflow-hidden">
