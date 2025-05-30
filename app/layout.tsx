@@ -74,6 +74,8 @@ export default function RootLayout({
       <head>
         {/* ICO fallback for older browsers */}
         <link rel="icon" href="/favicon.png" sizes="any" />
+        {/* Plausible analytics */}
+        <script defer data-domain="mind-map-maker.com" src="https://plausible.io/js/script.js"></script>
 
         {/* Modern PNG favicons */}
         <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
